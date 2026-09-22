@@ -22,43 +22,48 @@ export function HeroSection() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // Stagger entrance for corners
-      gsap.fromTo(
-        '.corner-telemetry',
-        { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.9, stagger: 0.1, ease: 'power2.out', delay: 0.2 }
+      const tlLoad = gsap.timeline({ delay: 0.1 });
+
+      // 1. Center box entrance & particles resolve
+      tlLoad.fromTo(
+        centerBoxRef.current,
+        { scale: 0.88, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 1.1, ease: 'expo.out' },
+        0
       );
 
-      // Hero Words entrance (translate from overflow mask)
-      gsap.fromTo(
+      // 2. First hero line reveals (SHAPING)
+      tlLoad.fromTo(
         '.reveal-hero-word',
-        { y: '110%', opacity: 0 },
+        { y: '110%' },
         {
           y: '0%',
-          opacity: 1,
-          duration: 1.1,
-          stagger: 0.14,
+          duration: 1.0,
+          stagger: 0.12,
           ease: 'power3.out',
-          delay: 0.35,
-        }
+        },
+        0.2
       );
 
-      // Center box entrance
-      gsap.fromTo(
-        centerBoxRef.current,
-        { scale: 0.85, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out', delay: 0.3 }
+      // 3. 4-corner telemetry appears
+      tlLoad.fromTo(
+        '.corner-telemetry',
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.8, stagger: 0.08, ease: 'power2.out' },
+        0.5
       );
 
-      // Pinning & Scroll Choreography (vanlent.dev 1:1)
+      // Pinned Hero Scroll Exit Choreography (vanlent.dev 1:1)
       if (heroRef.current && leftWordsRef.current && rightWordsRef.current) {
-        const tl = gsap.timeline({
+        const tlScroll = gsap.timeline({
           scrollTrigger: {
             trigger: heroRef.current,
             start: 'top top',
-            end: '+=130%',
+            end: '+=120%',
             pin: true,
-            scrub: 0.6,
+            scrub: 0.5,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
             onUpdate: (self) => {
               setClipProgress(Math.round(self.progress * 100));
             },
@@ -66,45 +71,45 @@ export function HeroSection() {
         });
 
         // Left words separate outwards horizontally
-        tl.to(
+        tlScroll.to(
           leftWordsRef.current,
           {
-            x: '-22vw',
+            x: '-25vw',
             opacity: 0.2,
-            ease: 'power1.inOut',
+            ease: 'none',
           },
           0
         );
 
         // Right words separate outwards horizontally
-        tl.to(
+        tlScroll.to(
           rightWordsRef.current,
           {
-            x: '22vw',
+            x: '25vw',
             opacity: 0.2,
-            ease: 'power1.inOut',
+            ease: 'none',
           },
           0
         );
 
         // 4-corner telemetry fades and translates up
-        tl.to(
+        tlScroll.to(
           '.corner-telemetry',
           {
-            opacity: 0.15,
-            y: -60,
-            stagger: 0.05,
+            opacity: 0.1,
+            y: -50,
+            stagger: 0.04,
             ease: 'none',
           },
           0
         );
 
         // Center box subtle scale/opacity shift
-        tl.to(
+        tlScroll.to(
           centerBoxRef.current,
           {
-            scale: 0.94,
-            opacity: 0.75,
+            scale: 0.95,
+            opacity: 0.8,
             ease: 'none',
           },
           0
