@@ -102,7 +102,7 @@ function createCurlNoise(noise3D: (x: number, y: number, z: number) => number) {
   };
 }
 
-// Camera offset alignment (vanlent.dev 1:1)
+// Camera offset alignment to map 3D mesh precisely to screen pixel coordinate
 const BUBBLE_CAMERA_DISTANCE = 8;
 const BUBBLE_CAMERA_FOV = 50;
 
@@ -152,7 +152,7 @@ export function GlobalBubbleScene() {
       powerPreference: 'high-performance',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     // High Density Fibonacci-distributed sphere particles (26,000 points)
     const particleCount = 26000;
@@ -184,22 +184,28 @@ export function GlobalBubbleScene() {
     baseGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
     const isDark = theme === 'dark';
-    const initialColor = isDark ? new THREE.Color('#FAFAFA') : new THREE.Color('#18181B');
+    const initialColor = isDark ? new THREE.Color('#FAFAFA') : new THREE.Color('#161616');
 
     const material = new THREE.PointsMaterial({
       color: initialColor,
-      size: 0.022,
+      size: 0.02,
       transparent: true,
-      opacity: isDark ? 0.88 : 0.78,
+      opacity: isDark ? 0.9 : 0.85,
       blending: isDark ? THREE.AdditiveBlending : THREE.NormalBlending,
       depthWrite: false,
     });
 
     const sphere = new THREE.Points(baseGeometry, material);
-    scene.add(sphere);
 
-    // Optional Secondary Dust Cloud (galaxy halo)
-    const dustCount = 1500;
+    // Architectural Hierarchy: meshTravelGroup -> meshAmbientGroup -> meshGeometry
+    const meshTravelGroup = new THREE.Group();
+    const meshAmbientGroup = new THREE.Group();
+    meshAmbientGroup.add(sphere);
+    meshTravelGroup.add(meshAmbientGroup);
+    scene.add(meshTravelGroup);
+
+    // Subtle faint motion residue (strictly <= 0.06 opacity)
+    const dustCount = 350;
     const dustGeometry = new THREE.BufferGeometry();
     const dustPositions = new Float32Array(dustCount * 3);
     for (let i = 0; i < dustCount; i++) {
@@ -207,7 +213,7 @@ export function GlobalBubbleScene() {
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      const r = 1.15 + Math.random() * 0.45;
+      const r = 1.1 + Math.random() * 0.35;
       const sinPhi = Math.sin(phi);
       dustPositions[i * 3] = r * sinPhi * Math.cos(theta);
       dustPositions[i * 3 + 1] = r * sinPhi * Math.sin(theta);
@@ -216,19 +222,19 @@ export function GlobalBubbleScene() {
     dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
     const dustMaterial = new THREE.PointsMaterial({
       color: initialColor,
-      size: 0.015,
+      size: 0.012,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.05,
       blending: isDark ? THREE.AdditiveBlending : THREE.NormalBlending,
       depthWrite: false,
     });
     const dustPoints = new THREE.Points(dustGeometry, dustMaterial);
-    sphere.add(dustPoints);
+    meshAmbientGroup.add(dustPoints);
 
     const noise3D = createNoise3D();
     const curlNoise = createCurlNoise(noise3D);
 
-    // Mouse tracking
+    // Mouse tracking for micro-parallax
     let mouseX = 0;
     let mouseY = 0;
     let targetMouseX = 0;
@@ -245,7 +251,7 @@ export function GlobalBubbleScene() {
     let currentScreenY = height / 2;
     let currentScale = 1.0;
 
-    // Morph state variables (vanlent.dev physical parameters)
+    // Morph state variables
     let currentWobble = 0.56;
     let currentCurl = 0.15;
     let currentCurlFreq = 0.18;
@@ -260,7 +266,7 @@ export function GlobalBubbleScene() {
     const render = () => {
       const time = clock.getElapsedTime() * 0.45;
 
-      // 1. Query all registered target docking elements
+      // 1. Query all registered target docking elements across sections
       const targetElements = Array.from(
         document.querySelectorAll<HTMLElement>('[data-bubble-target="true"]')
       );
@@ -276,14 +282,14 @@ export function GlobalBubbleScene() {
       let targetCavity = 0.0;
 
       if (targetElements.length > 0) {
-        // Sort elements by their vertical position in document
+        // Sort elements by vertical placement in document
         const targetInfos = targetElements
           .map((el) => {
             const rect = el.getBoundingClientRect();
             const section = el.getAttribute('data-section') || 'unknown';
 
-            // Define profile per section (vanlent.dev 1:1)
-            let colorHex = isDark ? '#FAFAFA' : '#18181B';
+            // Master chromatic and morph profiles per section
+            let colorHex = isDark ? '#FAFAFA' : '#161616';
             let wobble = 0.56;
             let curl = 0.15;
             let curlFreq = 0.18;
@@ -292,7 +298,7 @@ export function GlobalBubbleScene() {
             let scale = 1.0;
 
             if (section === 'hero') {
-              colorHex = isDark ? '#FAFAFA' : '#18181B';
+              colorHex = isDark ? '#FAFAFA' : '#161616';
               wobble = 0.56;
               curl = 0.15;
               curlFreq = 0.18;
@@ -300,25 +306,25 @@ export function GlobalBubbleScene() {
               cavity = 0.0;
               scale = 1.0;
             } else if (section === 'work') {
-              colorHex = isDark ? '#E2E8F0' : '#0F172A';
+              colorHex = isDark ? '#E2E8F0' : '#262626';
               wobble = 0.22;
               curl = 0.95;
               curlFreq = 0.36;
               spike = 0.0;
               cavity = 0.0;
-              scale = 1.08;
+              scale = 1.06;
             } else if (section === 'services') {
-              // GOLDEN / AMBER SOLAR CORONA (User Screenshot 1 & 5)
-              colorHex = '#F59E0B';
+              // Warm amber / orange morph
+              colorHex = '#D97706';
               wobble = 0.88;
-              curl = 0.18;
+              curl = 0.22;
               curlFreq = 0.24;
               spike = 0.92;
               cavity = 0.0;
-              scale = 1.06;
+              scale = 1.08;
             } else if (section === 'about') {
-              // WHITE HOLLOW ORGANIC CAVITY SHELL (User Screenshot 2 & 3)
-              colorHex = '#FFFFFF';
+              // White / pale grey organic cavity shell
+              colorHex = isDark ? '#FFFFFF' : '#404040';
               wobble = 0.75;
               curl = 0.38;
               curlFreq = 0.28;
@@ -326,14 +332,14 @@ export function GlobalBubbleScene() {
               cavity = 0.88;
               scale = 1.02;
             } else if (section === 'footer') {
-              // DENSE GLOWING WHITE ORB (User Screenshot 4)
-              colorHex = '#FFFFFF';
-              wobble = 0.12;
-              curl = 0.06;
+              // Dense resting orb
+              colorHex = isDark ? '#FAFAFA' : '#161616';
+              wobble = 0.14;
+              curl = 0.08;
               curlFreq = 0.12;
               spike = 0.0;
               cavity = 0.0;
-              scale = 1.25;
+              scale = 1.2;
             }
 
             return {
@@ -355,7 +361,7 @@ export function GlobalBubbleScene() {
 
         const vCenterY = height * 0.5;
 
-        // Find bounding targets for continuous spline interpolation
+        // Continuous spline interpolation based on scroll position
         if (targetInfos.length === 1 || vCenterY <= targetInfos[0].cy) {
           const t0 = targetInfos[0];
           targetScreenX = t0.cx;
@@ -379,7 +385,6 @@ export function GlobalBubbleScene() {
           targetCavity = tLast.cavity;
           targetColor.copy(tLast.color);
         } else {
-          // Bounded between two section targets
           let idxA = 0;
           for (let i = 0; i < targetInfos.length - 1; i++) {
             if (targetInfos[i].cy <= vCenterY && targetInfos[i + 1].cy >= vCenterY) {
@@ -392,7 +397,6 @@ export function GlobalBubbleScene() {
           const span = tB.cy - tA.cy;
           const rawT = span > 0 ? (vCenterY - tA.cy) / span : 0;
           const clampedT = Math.max(0, Math.min(1, rawT));
-          // Cubic smoothstep ease for physical gliding feel
           const easeT = clampedT * clampedT * (3 - 2 * clampedT);
 
           targetScreenX = tA.cx + (tB.cx - tA.cx) * easeT;
@@ -407,34 +411,35 @@ export function GlobalBubbleScene() {
         }
       }
 
-      // Smooth physics lerping
-      currentScreenX += (targetScreenX - currentScreenX) * 0.09;
-      currentScreenY += (targetScreenY - currentScreenY) * 0.09;
-      currentScale += (targetScale - currentScale) * 0.07;
+      // Physics lerping for responsive, jitter-free scroll following
+      currentScreenX += (targetScreenX - currentScreenX) * 0.12;
+      currentScreenY += (targetScreenY - currentScreenY) * 0.12;
+      currentScale += (targetScale - currentScale) * 0.08;
 
-      currentWobble += (targetWobble - currentWobble) * 0.06;
-      currentCurl += (targetCurl - currentCurl) * 0.06;
-      currentCurlFreq += (targetCurlFreq - currentCurlFreq) * 0.06;
-      currentSpike += (targetSpike - currentSpike) * 0.06;
-      currentCavity += (targetCavity - currentCavity) * 0.06;
+      currentWobble += (targetWobble - currentWobble) * 0.08;
+      currentCurl += (targetCurl - currentCurl) * 0.08;
+      currentCurlFreq += (targetCurlFreq - currentCurlFreq) * 0.08;
+      currentSpike += (targetSpike - currentSpike) * 0.08;
+      currentCavity += (targetCavity - currentCavity) * 0.08;
 
-      // Color lerp
+      // Color interpolation
       material.color.lerp(targetColor, 0.08);
       dustMaterial.color.lerp(targetColor, 0.08);
 
-      // Mouse parallax lerp
+      // Micro mouse parallax
       mouseX += (targetMouseX - mouseX) * 0.05;
       mouseY += (targetMouseY - mouseY) * 0.05;
 
-      // Align camera to target screen coordinates
+      // Align camera to target screen coordinates (only camera view offset writes screen position)
       alignCameraToScreenPoint(camera, currentScreenX, currentScreenY, width, height);
 
-      sphere.position.set(0, 0, 0);
-      sphere.scale.setScalar(currentScale);
+      // Macro scale and position strictly written to meshTravelGroup
+      meshTravelGroup.scale.setScalar(currentScale);
 
-      sphere.rotation.y = time * 0.35 + mouseX * 0.3;
-      sphere.rotation.x = time * 0.2 + mouseY * 0.25;
-      dustPoints.rotation.y = -time * 0.2;
+      // Ambient micro-rotation written strictly to meshAmbientGroup
+      meshAmbientGroup.rotation.y = time * 0.25 + mouseX * 0.15;
+      meshAmbientGroup.rotation.x = time * 0.15 + mouseY * 0.12;
+      dustPoints.rotation.y = -time * 0.15;
 
       // Organic Simplex + Curl + Spikes + Cavity Shell Deformation
       const posArray = baseGeometry.attributes.position.array as Float32Array;
@@ -459,12 +464,12 @@ export function GlobalBubbleScene() {
           nz * currentCurlFreq + time * 0.2
         );
 
-        // Spike bursts for services (Screenshot 1: authentic solar corona flares)
+        // Spike bursts for services
         const spikeVal =
           Math.pow(Math.max(0, nVal), 3.4) * currentSpike * 1.15 +
           Math.sin(nx * 14.0 + time * 2.5) * Math.cos(nz * 14.0 + time * 2.5) * currentSpike * 0.14;
 
-        // Shell cavity wave for about section (Screenshot 2 & 3: hollow aperture center with layered contours)
+        // Shell cavity wave for about section
         const rXZ = Math.sqrt(nx * nx + nz * nz);
         const cavityIndentation =
           (Math.sin(ny * 5.0 + time * 1.4) * 0.35 - Math.exp(-rXZ * 2.8) * 0.55) * currentCavity;
@@ -489,12 +494,23 @@ export function GlobalBubbleScene() {
       renderer.setSize(width, height);
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animId);
+      } else {
+        clock.start();
+        animId = requestAnimationFrame(render);
+      }
+    };
+
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       baseGeometry.dispose();
       dustGeometry.dispose();
       material.dispose();
