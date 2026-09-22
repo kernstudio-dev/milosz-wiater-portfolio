@@ -242,14 +242,13 @@ export function SelectedWork() {
                   </h3>
 
                   <div
+                    className="project-arrow"
                     style={{
                       width: '28px',
                       height: '28px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'var(--text-secondary)',
-                      transition: 'transform 0.3s ease, color 0.3s ease',
                     }}
                   >
                     <ArrowUpRight size={18} />

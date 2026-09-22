@@ -497,6 +497,16 @@ img, video {
   border-top: 1px solid var(--border-subtle);
 }
 
+.project-arrow {
+  transition: transform 0.3s var(--ease-out-expo), color 0.3s ease;
+  color: var(--text-secondary);
+}
+
+.project-card:hover .project-arrow {
+  transform: translate(3px, -3px);
+  color: var(--text-primary);
+}
+
 /* ==========================================================================
    SCROLLBAR & REDUCED MOTION
    ========================================================================== */
