@@ -230,7 +230,7 @@ export function HeroSection() {
           zIndex: 6,
         }}
       >
-        {/* LEFT WORDS: SHAPING CONCEPTS */}
+        {/* LEFT WORDS: SHAPING CONCEPTS (Display Serif Editorial Hierarchy) */}
         <div
           ref={leftWordsRef}
           style={{
@@ -245,13 +245,12 @@ export function HeroSection() {
         >
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word"
+              className="reveal-hero-word font-serif"
               style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(36px, 5.5vw, 84px)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.05,
+                fontSize: 'clamp(48px, 6.5vw, 130px)',
+                fontWeight: 400,
+                letterSpacing: '-0.03em',
+                lineHeight: 0.9,
                 textTransform: 'uppercase',
                 color: 'var(--text-primary)',
               }}
@@ -262,15 +261,14 @@ export function HeroSection() {
 
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word"
+              className="reveal-hero-word font-serif"
               style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(36px, 5.5vw, 84px)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.05,
+                fontSize: 'clamp(48px, 6.5vw, 130px)',
+                fontWeight: 400,
+                letterSpacing: '-0.03em',
+                lineHeight: 0.9,
                 textTransform: 'uppercase',
-                color: 'var(--text-tertiary)',
+                color: 'var(--text-secondary)',
               }}
             >
               CONCEPTS
@@ -388,7 +386,7 @@ export function HeroSection() {
           />
         </div>
 
-        {/* RIGHT WORDS: BUILDING EXPERIENCES */}
+        {/* RIGHT WORDS: BUILDING EXPERIENCES (Display Serif Editorial Hierarchy) */}
         <div
           ref={rightWordsRef}
           style={{
@@ -405,13 +403,12 @@ export function HeroSection() {
         >
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word"
+              className="reveal-hero-word font-serif"
               style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(36px, 5.5vw, 84px)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.05,
+                fontSize: 'clamp(48px, 6.5vw, 130px)',
+                fontWeight: 400,
+                letterSpacing: '-0.03em',
+                lineHeight: 0.9,
                 textTransform: 'uppercase',
                 color: 'var(--text-primary)',
               }}
@@ -422,15 +419,14 @@ export function HeroSection() {
 
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word"
+              className="reveal-hero-word font-serif"
               style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(36px, 5.5vw, 84px)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.05,
+                fontSize: 'clamp(48px, 6.5vw, 130px)',
+                fontWeight: 400,
+                letterSpacing: '-0.03em',
+                lineHeight: 0.9,
                 textTransform: 'uppercase',
-                color: 'var(--text-tertiary)',
+                color: 'var(--text-secondary)',
               }}
             >
               EXPERIENCES

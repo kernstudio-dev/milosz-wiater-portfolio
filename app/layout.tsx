@@ -1,6 +1,29 @@
 import type { Metadata } from 'next';
+import { Playfair_Display, Inter, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { CustomCursor } from '@/components/CustomCursor';
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-serif',
+  weight: ['400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+  weight: ['300', '400', '500', '600', '700'],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
+  weight: ['400', '500', '600'],
+});
 
 export const metadata: Metadata = {
   title: 'MIŁOSZ WIATER — Creative Developer & Digital Product Developer',
@@ -87,14 +110,14 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${playfair.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body>
+      <body className="antialiased">
         {/* Subtle Architectural Blueprint Grid */}
         <div className="blueprint-grid-overlay" aria-hidden="true" />
         
