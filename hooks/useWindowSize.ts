@@ -1,44 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { computeGridMetrics, type GridMetrics } from '@/lib/grid';
 
 interface WindowSize {
   width: number;
   height: number;
   isMobile: boolean;
+  metrics: GridMetrics;
 }
 
-export function useWindowSize(): WindowSize {
-  const [windowSize, setWindowSize] = useState<WindowSize>({
-    width: typeof window !== 'undefined' ? window.innerWidth : 1440,
-    height: typeof window !== 'undefined' ? window.innerHeight : 900,
-    isMobile: false,
+export function useWindowSize(onMetrics?: (m: GridMetrics) => void): WindowSize {
+  const [windowSize, setWindowSize] = useState<WindowSize>(() => {
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const metrics = computeGridMetrics(vw, vh);
+    return { width: vw, height: vh, isMobile: !metrics.isPinned, metrics };
   });
 
   useEffect(() => {
     function handleResize() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const isMobile = vw < 768;
+      const metrics = computeGridMetrics(vw, vh);
+
+      document.documentElement.style.setProperty('--grid-block-size', `${metrics.blockSize}px`);
+      document.documentElement.style.setProperty('--grid-cols', String(metrics.sectionCols));
+      document.documentElement.style.setProperty('--grid-max-width', `${metrics.maxWidth}px`);
+      document.documentElement.style.setProperty('--grid-x-offset', `${metrics.xOffset}px`);
+      document.documentElement.style.setProperty('--header-height', `${metrics.blockSize}px`);
+
+      onMetrics?.(metrics);
 
       setWindowSize({
         width: vw,
         height: vh,
-        isMobile,
+        isMobile: !metrics.isPinned,
+        metrics,
       });
-
-      // Mathematical grid block size computation (vanlent.dev inspiration)
-      const targetColumns = isMobile ? 8 : 16;
-      const blockSize = Math.max(36, Math.min(64, Math.floor(vw / targetColumns)));
-      
-      document.documentElement.style.setProperty('--grid-block-size', `${blockSize}px`);
-      document.documentElement.style.setProperty('--grid-cols', String(targetColumns));
     }
 
     handleResize();
     window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [onMetrics]);
 
   return windowSize;
 }

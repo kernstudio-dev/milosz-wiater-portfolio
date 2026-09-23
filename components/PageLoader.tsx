@@ -8,51 +8,35 @@ interface PageLoaderProps {
 }
 
 export function PageLoader({ onComplete }: PageLoaderProps) {
-  const [progress, setProgress] = useState<number>(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const progressObj = { val: 0 };
     const tl = gsap.timeline({
       onComplete: () => {
-        if (onComplete) onComplete();
+        setVisible(false);
+        onComplete?.();
       },
     });
 
-    // Progress count
-    tl.to(progressObj, {
-      val: 100,
-      duration: 1.4,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        setProgress(Math.round(progressObj.val));
-      },
-    });
-
-    // Stagger in letters
     tl.fromTo(
       '.loader-letter',
-      { y: 40, opacity: 0 },
-      {
-        y: 0,
-        opacity: 1,
-        duration: 0.6,
-        stagger: 0.03,
-        ease: 'power3.out',
-      },
-      '-=1.2'
+      { opacity: 0 },
+      { opacity: 1, duration: 0.1, stagger: 0.1, ease: 'none' },
+      0.2
     );
 
-    // Clip wipe reveal
-    tl.to('.page-loader-overlay', {
-      clipPath: 'inset(0 0 100% 0)',
-      duration: 0.85,
-      ease: 'power4.inOut',
-    });
+    tl.to('.loader-box', { className: 'loader-box loader-box--active' }, 0);
 
-    tl.set('.page-loader-overlay', { display: 'none' });
+    tl.to('.page-loader-overlay', {
+      clipPath: 'inset(50% 0 50% 0)',
+      duration: 0.5,
+      ease: 'power2.inOut',
+    }, 1.8);
   }, [onComplete]);
 
-  const nameLetters = 'MIŁOSZ WIATER'.split('');
+  if (!visible) return null;
+
+  const letters = 'KERN'.split('');
 
   return (
     <div
@@ -60,112 +44,63 @@ export function PageLoader({ onComplete }: PageLoaderProps) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 'var(--z-loader)',
-        backgroundColor: '#09090b',
+        zIndex: 10000,
+        backgroundColor: 'var(--bg-canvas)',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         clipPath: 'inset(0 0 0% 0)',
-        willChange: 'clip-path',
-        overflow: 'hidden',
       }}
     >
-      {/* Subtle grid */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          opacity: 0.03,
-          backgroundImage:
-            'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
-          backgroundSize: '64px 64px',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Center Content */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '20px',
-        }}
-      >
-        {/* Name with character stagger */}
+      <div className="loader-box">
+        <span className="loader-bracket loader-bracket--tl" />
+        <span className="loader-bracket loader-bracket--tr" />
+        <span className="loader-bracket loader-bracket--bl" />
+        <span className="loader-bracket loader-bracket--br" />
         <h1
           style={{
             display: 'flex',
+            gap: '0.05em',
             fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(32px, 5vw, 56px)',
-            fontWeight: 100,
-            letterSpacing: '0.16em',
-            textTransform: 'uppercase',
-            color: '#FAFAFA',
-            lineHeight: 1,
+            fontSize: 'clamp(28px, 4vw, 44px)',
+            fontWeight: 200,
+            letterSpacing: '0.2em',
+            color: 'var(--text-primary)',
           }}
         >
-          {nameLetters.map((char, index) => (
-            <span
-              key={index}
-              className="loader-letter"
-              style={{
-                display: 'inline-block',
-                whiteSpace: char === ' ' ? 'pre' : 'normal',
-              }}
-            >
-              {char}
-            </span>
+          {letters.map((char, i) => (
+            <span key={i} className="loader-letter">{char}</span>
           ))}
         </h1>
-
-        {/* Minimal progress line */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            width: '200px',
-          }}
-        >
-          <div
-            style={{
-              flex: 1,
-              height: '1px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${progress}%`,
-                backgroundColor: 'rgba(255,255,255,0.5)',
-                transition: 'width 0.1s linear',
-              }}
-            />
-          </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              color: 'rgba(255,255,255,0.4)',
-              minWidth: '38px',
-              textAlign: 'right',
-            }}
-          >
-            {progress.toString().padStart(2, '0')}%
-          </span>
-        </div>
       </div>
+
+      <style jsx>{`
+        .loader-box {
+          position: relative;
+          width: calc(var(--grid-block-size, 90px) * 6);
+          height: calc(var(--grid-block-size, 90px) * 6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .loader-bracket {
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border-color: var(--border-primary);
+          border-style: solid;
+        }
+        .loader-bracket--tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+        .loader-bracket--tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+        .loader-bracket--bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+        .loader-bracket--br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+        .loader-box--active .loader-bracket {
+          animation: bracket-grow 0.8s ease forwards;
+        }
+        @keyframes bracket-grow {
+          to { width: 48px; height: 48px; }
+        }
+      `}</style>
     </div>
   );
 }

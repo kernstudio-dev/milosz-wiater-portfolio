@@ -6,262 +6,177 @@ import { sound } from '@/utils/sound';
 
 export function Navigation() {
   const { theme, toggleTheme } = useTheme();
-  const [lang, setLang] = useState<'EN' | 'PL'>('EN');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleThemeToggle = () => {
-    sound.playClick(1500);
-    toggleTheme();
-  };
-
-  const handleLangToggle = (newLang: 'EN' | 'PL') => {
-    sound.playClick(1300);
-    setLang(newLang);
-  };
-
-  const scrollToContact = () => {
+  const scrollToSection = (id: string) => {
     sound.playClick(1400);
-    const contactEl = document.getElementById('contact');
-    if (contactEl) {
-      contactEl.scrollIntoView({ behavior: 'smooth' });
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const navLinks = [
-    { label: 'WORK', href: '#work', number: '01' },
-    { label: 'SERVICES', href: '#services', number: '02' },
-    { label: 'ABOUT', href: '#about', number: '03' },
-    { label: 'PROCESS', href: '#process', number: '04' },
-    { label: 'CONTACT', href: '#contact', number: '05' },
+    { label: 'WORK', id: 'work' },
+    { label: 'SERVICES', id: 'services' },
+    { label: 'ABOUT', id: 'about' },
+    { label: 'CONTACT', id: 'footer' },
   ];
 
   return (
     <>
-      <header
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '56px',
-          zIndex: 80,
-          backgroundColor: 'transparent',
-          pointerEvents: 'none',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        <div
-          className="content-constraint"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-            pointerEvents: 'auto',
-          }}
-        >
-          {/* Left: Brand WIATER + Menu Button 'M' (vanlent.dev Screenshot 3 & 5 1:1) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <a
-              href="#hero-section"
-              data-cursor="hover"
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--text-primary)',
-                textDecoration: 'none',
-              }}
-            >
-              WIATER
+      <header className="site-header">
+        <div className="site-header__inner section-content">
+          <div className="site-header__left">
+            <a href="#hero-section" className="site-header__brand" data-cursor="hover">
+              KERN
             </a>
-
             <button
               type="button"
+              className="site-header__menu-btn"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="corner-box"
-              data-cursor="hover"
               aria-label="Open navigation menu"
-              style={{
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                backgroundColor: 'transparent',
-                borderColor: 'var(--border-subtle)',
-                cursor: 'pointer',
-              }}
             >
-              <span className="corner-crosshair corner-crosshair-tl" />
-              <span className="corner-crosshair corner-crosshair-tr" />
-              <span className="corner-crosshair corner-crosshair-bl" />
-              <span className="corner-crosshair corner-crosshair-br" />
               M
             </button>
           </div>
 
-          {/* Right: Language toggle + Theme toggle (AM / PM) + Get in touch (Screenshot 3, 4, 5!) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Language Selector EN / PL */}
-            <button
-              type="button"
-              onClick={() => handleLangToggle(lang === 'EN' ? 'PL' : 'EN')}
-              className="corner-box"
-              data-cursor="hover"
-              style={{
-                padding: '6px 10px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: 'var(--text-secondary)',
-                backgroundColor: 'transparent',
-                borderColor: 'var(--border-subtle)',
-                cursor: 'pointer',
-              }}
-            >
-              <span className="corner-crosshair corner-crosshair-tl" />
-              <span className="corner-crosshair corner-crosshair-tr" />
-              <span className="corner-crosshair corner-crosshair-bl" />
-              <span className="corner-crosshair corner-crosshair-br" />
-              {lang}
-            </button>
+          <nav className="site-header__nav" aria-label="Primary">
+            {navLinks.map((link) => (
+              <button
+                key={link.id}
+                type="button"
+                className="site-header__nav-item"
+                onClick={() => scrollToSection(link.id)}
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
 
-            {/* Theme Toggle AM / PM */}
-            <button
-              type="button"
-              onClick={handleThemeToggle}
-              className="corner-box"
-              data-cursor="hover"
-              aria-label="Toggle AM / PM theme"
-              style={{
-                width: '38px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-                backgroundColor: 'transparent',
-                borderColor: 'var(--border-subtle)',
-                cursor: 'pointer',
-              }}
-            >
-              <span className="corner-crosshair corner-crosshair-tl" />
-              <span className="corner-crosshair corner-crosshair-tr" />
-              <span className="corner-crosshair corner-crosshair-bl" />
-              <span className="corner-crosshair corner-crosshair-br" />
-              <span>{theme === 'dark' ? 'PM' : 'AM'}</span>
+          <div className="site-header__right">
+            <button type="button" className="site-header__toggle" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? 'PM' : 'AM'}
             </button>
-
-            {/* Get in touch button (matching Screenshot 3 & 5 exactly!) */}
-            <button
-              type="button"
-              onClick={scrollToContact}
-              className="corner-box"
-              data-cursor="hover"
-              style={{
-                padding: '7px 16px',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-                backgroundColor: 'transparent',
-                borderColor: 'var(--border-subtle)',
-                cursor: 'pointer',
-              }}
-            >
-              <span className="corner-crosshair corner-crosshair-tl" />
-              <span className="corner-crosshair corner-crosshair-tr" />
-              <span className="corner-crosshair corner-crosshair-bl" />
-              <span className="corner-crosshair corner-crosshair-br" />
+            <button type="button" className="site-header__cta" onClick={() => scrollToSection('footer')}>
               Get in touch
             </button>
           </div>
         </div>
       </header>
 
-      {/* Fullscreen Masked Menu Drawer */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 90,
-          backgroundColor: 'var(--bg-canvas)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '40px 24px',
-          clipPath: isMobileMenuOpen ? 'inset(0 0 0% 0)' : 'inset(0 0 100% 0)',
-          transition: 'clip-path 0.5s var(--ease-out-expo)',
-          pointerEvents: isMobileMenuOpen ? 'auto' : 'none',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-            maxWidth: '440px',
-            margin: '0 auto',
-            width: '100%',
-          }}
-        >
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid var(--border-subtle)',
-                paddingBottom: '14px',
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(32px, 6vw, 48px)',
-                fontWeight: 300,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'baseline', gap: '20px' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'var(--text-tertiary)' }}>
-                  {link.number}
-                </span>
-                {link.label}
-              </span>
-            </a>
-          ))}
-        </div>
-
-        <div
-          style={{
-            marginTop: '48px',
-            textAlign: 'center',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
-            color: 'var(--text-tertiary)',
-            letterSpacing: '0.12em',
-          }}
-        >
-          MIŁOSZ WIATER // CREATIVE DEVELOPER
-          <br />
-          WARSAW, PL [52.2297° N, 21.0122° E]
-        </div>
+      <div className={`site-menu ${isMobileMenuOpen ? 'site-menu--open' : ''}`}>
+        {navLinks.map((link) => (
+          <button
+            key={link.id}
+            type="button"
+            className="site-menu__link"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              scrollToSection(link.id);
+            }}
+          >
+            {link.label}
+          </button>
+        ))}
+        <p className="site-menu__meta font-mono">KERN — CREATIVE DEVELOPMENT</p>
       </div>
+
+      <style jsx>{`
+        .site-header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: var(--header-height);
+          z-index: 100;
+          pointer-events: none;
+        }
+        .site-header__inner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: 100%;
+          pointer-events: auto;
+        }
+        .site-header__left,
+        .site-header__right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .site-header__brand {
+          font-family: var(--font-display);
+          font-size: 14px;
+          font-weight: 400;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--text-primary);
+          text-decoration: none;
+          width: calc(var(--grid-block-size) * 2);
+        }
+        .site-header__menu-btn,
+        .site-header__toggle,
+        .site-header__cta,
+        .site-header__nav-item {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          background: transparent;
+          border: 1px solid var(--border-primary);
+          padding: 6px 10px;
+          cursor: pointer;
+        }
+        .site-header__nav {
+          display: none;
+          gap: 0;
+        }
+        @media (min-width: 1024px) {
+          .site-header__nav {
+            display: flex;
+          }
+          .site-header__menu-btn {
+            display: none;
+          }
+        }
+        .site-menu {
+          position: fixed;
+          inset: 0;
+          z-index: 90;
+          background: var(--bg-canvas);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          gap: 24px;
+          clip-path: inset(0 0 100% 0);
+          transition: clip-path 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+          pointer-events: none;
+        }
+        .site-menu--open {
+          clip-path: inset(0 0 0 0);
+          pointer-events: auto;
+        }
+        .site-menu__link {
+          font-family: var(--font-display);
+          font-size: clamp(32px, 6vw, 48px);
+          font-weight: 200;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: var(--text-primary);
+          background: none;
+          border: none;
+          cursor: pointer;
+        }
+        .site-menu__meta {
+          margin-top: 32px;
+          font-size: 11px;
+          color: var(--text-tertiary);
+          letter-spacing: 0.12em;
+        }
+      `}</style>
     </>
   );
 }

@@ -1,269 +1,106 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { sound } from '@/utils/sound';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect } from 'react';
+import { PinnedSection } from '@/components/PinnedSection';
+import { useScrollProgress } from '@/context/ScrollContext';
+import { scaleFontSize } from '@/lib/grid';
 
-interface Capability {
-  id: string;
-  number: string;
-  title: string;
-  description: string;
-}
-
-const CAPABILITIES: Capability[] = [
-  {
-    id: 'frontend',
-    number: '01',
-    title: 'FRONT-END DEVELOPMENT',
-    description: 'React, Next.js 15, TypeScript, component architecture, performance optimization.',
-  },
-  {
-    id: 'webapps',
-    number: '02',
-    title: 'WEB APPLICATIONS',
-    description: 'Full-stack platforms, REST & WebSocket APIs, database integration, authentication.',
-  },
-  {
-    id: 'uiux',
-    number: '03',
-    title: 'UI / UX DESIGN',
-    description: 'Design systems, interaction prototypes, editorial typography, spatial hierarchy.',
-  },
-  {
-    id: 'motion',
-    number: '04',
-    title: 'MOTION & INTERACTION',
-    description: 'GSAP, ScrollTrigger, Three.js, GLSL shaders, physics choreography.',
-  },
-  {
-    id: 'ai',
-    number: '05',
-    title: 'AI INTEGRATION',
-    description: 'Gemini Live API, autonomous agents, FastAPI microservices, real-time streaming.',
-  },
-  {
-    id: 'automation',
-    number: '06',
-    title: 'AUTOMATION SYSTEMS',
-    description: 'Webhook pipelines, data synchronization, background workers, CI/CD.',
-  },
+const COMBINATIONS = [
+  { title: 'web development', desc: 'High-performance front-end architecture and creative development.' },
+  { title: 'front end development', desc: 'React, Next.js, motion systems, and shader-driven experiences.' },
+  { title: 'back end development', desc: 'APIs, databases, automation pipelines, and agent systems.' },
+  { title: 'web design', desc: 'Editorial grid systems, typography, and tactile interaction design.' },
+  { title: 'ux/ui design', desc: 'Component libraries, design tokens, and accessible interface systems.' },
+  { title: 'motion design', desc: 'Scroll choreography, pinned timelines, and kinetic typography.' },
 ];
 
 export function ServicesIndex() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const sectionRef = useRef<HTMLElement>(null);
+  const scrollCtx = useScrollProgress();
+  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.services;
+  const isPinned = typeof scrollCtx !== 'number' && scrollCtx.isPinned('services');
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+    window.dispatchEvent(new CustomEvent('services-progress', { detail: progress }));
+  }, [progress]);
 
-    const ctx = gsap.context(() => {
-      // Scroll-driven entry reveal
-      gsap.fromTo(
-        '.services-reveal',
-        { y: 60, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.08,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none none',
-          },
-        }
-      );
-    }, sectionRef);
+  const comboIndex = Math.min(
+    COMBINATIONS.length - 1,
+    Math.floor(Math.max(0, progress - 1 / 6) / ((2 / 3 - 1 / 6) / COMBINATIONS.length))
+  );
+  const combo = COMBINATIONS[comboIndex];
 
-    return () => ctx.revert();
-  }, []);
+  const slideT = Math.max(0, Math.min(1, (progress - 0.62) / 0.08));
+  const translateX = -630 * slideT;
 
-  const handleSelect = (idx: number) => {
-    if (idx !== activeIndex) {
-      sound.playClick(1200 + idx * 80);
-      setActiveIndex(idx);
-    }
-  };
+  const counter1 = Math.round(Math.max(0, Math.min(1, (progress - 0.7) / 0.07)) * 23);
+  const counter2 = Math.round(Math.max(0, Math.min(1, (progress - 0.77) / 0.07)) * 13);
+  const counter3 = Math.round(Math.max(0, Math.min(1, (progress - 0.84) / 0.06)) * 99);
+
+  const bs = 90;
+  const headingSize = scaleFontSize(43.07, 3.46, bs);
 
   return (
-    <section
-      id="services"
-      ref={sectionRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '100vh',
-        padding: 'clamp(64px, 8vw, 120px) 0',
-        borderTop: '1px solid var(--border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-canvas)',
-      }}
-    >
-      {/* Docking Target */}
-      <div
-        data-bubble-target="true"
-        data-section="services"
-        style={{
-          position: 'absolute',
-          top: '25%',
-          right: '8%',
-          width: 'clamp(240px, 26vw, 380px)',
-          height: 'clamp(240px, 26vw, 380px)',
-          pointerEvents: 'none',
-          zIndex: 4,
-        }}
-      />
-
-      <div className="content-constraint" style={{ width: '100%' }}>
-        {/* Section Header */}
-        <div
-          className="services-reveal"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            marginBottom: 'clamp(32px, 4vw, 56px)',
-            borderBottom: '1px solid var(--border-subtle)',
-            paddingBottom: '20px',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}
-        >
-          <div>
-            <div className="tech-label" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
-              CAPABILITIES
-            </div>
-            <h2
-              className="font-display"
-              style={{
-                fontSize: 'clamp(38px, 5vw, 76px)',
-                fontWeight: 200,
-                letterSpacing: '-0.025em',
-                lineHeight: 0.95,
-                textTransform: 'uppercase',
-                color: 'var(--text-primary)',
-              }}
-            >
-              SERVICES
+    <PinnedSection id="services">
+      <div className="services-wrapper" style={{ transform: `translateX(${translateX}px)` }}>
+        <div className="section-grid-inner services-grid">
+          <div className={`services-heading border-draw ${isPinned ? 'is-visible' : ''}`} style={{ gridColumn: '1 / 10', gridRow: '3 / 5' }}>
+            <h2 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase', lineHeight: 1.05 }}>
+              Reliable Creative Versatile
             </h2>
           </div>
-        </div>
 
-        {/* Capability Index */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            borderTop: '1px solid var(--border-subtle)',
-          }}
-        >
-          {CAPABILITIES.map((cap, idx) => {
-            const isActive = idx === activeIndex;
+          <div className="services-combo" style={{ gridColumn: '1 / 8', gridRow: '5 / 7' }}>
+            <h3 className="services-combo-title">{combo.title}</h3>
+            <p className="services-combo-desc">{combo.desc}</p>
+          </div>
 
-            return (
-              <div
-                key={cap.id}
-                className="services-reveal"
-                onClick={() => handleSelect(idx)}
-                onMouseEnter={() => handleSelect(idx)}
-                data-cursor="hover"
-                style={{
-                  padding: 'clamp(20px, 2.5vw, 32px) 0',
-                  borderBottom: '1px solid var(--border-subtle)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    justifyContent: 'space-between',
-                    gap: '20px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'baseline',
-                      gap: '20px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '13px',
-                        color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                        transition: 'color 0.3s ease',
-                        minWidth: '24px',
-                      }}
-                    >
-                      {cap.number}
-                    </span>
-
-                    <h3
-                      style={{
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: 'clamp(20px, 2.5vw, 34px)',
-                        fontWeight: isActive ? 400 : 300,
-                        letterSpacing: '-0.02em',
-                        textTransform: 'uppercase',
-                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        transition: 'color 0.3s ease, transform 0.3s ease',
-                        transform: isActive ? 'translateX(8px)' : 'translateX(0)',
-                      }}
-                    >
-                      {cap.title}
-                    </h3>
-                  </div>
-
-                  <div
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
-                      border: '1px solid var(--border-medium)',
-                      transition: 'background-color 0.3s ease',
-                      flexShrink: 0,
-                    }}
-                  />
-                </div>
-
-                {/* Description reveals when active */}
-                <div
-                  style={{
-                    maxHeight: isActive ? '60px' : '0',
-                    overflow: 'hidden',
-                    transition: 'max-height 0.4s ease',
-                    paddingLeft: '44px',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '12px',
-                      color: 'var(--text-tertiary)',
-                      lineHeight: 1.6,
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    {cap.description}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+          <div className="services-stats" style={{ gridColumn: '1 / 6', gridRow: '7 / 9', opacity: slideT > 0.5 ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+            <div className="stat"><span className="stat-num">{counter1}+</span><span className="stat-label">projects delivered</span></div>
+            <div className="stat"><span className="stat-num">{counter2}+</span><span className="stat-label">technologies</span></div>
+            <div className="stat"><span className="stat-num">{counter3}%</span><span className="stat-label">client satisfaction</span></div>
+          </div>
         </div>
       </div>
-    </section>
+
+      <style jsx>{`
+        .services-wrapper {
+          will-change: transform;
+        }
+        .services-grid {
+          padding-top: calc(var(--grid-block-size) * 2);
+          padding-bottom: calc(var(--grid-block-size) * 2);
+        }
+        .services-combo-title {
+          font-size: 28px;
+          font-weight: 200;
+          text-transform: lowercase;
+          margin-bottom: 8px;
+        }
+        .services-combo-desc {
+          font-size: 18.53px;
+          color: var(--text-secondary);
+          line-height: 1.5;
+          max-width: 480px;
+        }
+        .services-stats {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .stat-num {
+          font-family: var(--font-display);
+          font-size: 36px;
+          font-weight: 200;
+          display: block;
+        }
+        .stat-label {
+          font-family: var(--font-mono);
+          font-size: 14px;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+      `}</style>
+    </PinnedSection>
   );
 }

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useLenis } from '@/hooks/useLenis';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { ScrollProvider } from '@/context/ScrollContext';
+import { BubbleProvider, useBubble } from '@/context/BubbleContext';
 import { PageLoader } from '@/components/PageLoader';
-import { GlobalBubbleScene } from '@/components/GlobalBubbleScene';
+import { BubbleScene } from '@/components/BubbleScene';
 import { Navigation } from '@/components/Navigation';
 import { HeroSection } from '@/components/HeroSection';
 import { SelectedWork } from '@/components/SelectedWork';
@@ -13,31 +15,29 @@ import { ServicesIndex } from '@/components/ServicesIndex';
 import { TechPhilosophy } from '@/components/TechPhilosophy';
 import { ContactFooter } from '@/components/ContactFooter';
 
-export default function Home() {
-  // Initialize Lenis smooth scroll synchronized with GSAP ScrollTrigger
-  useLenis();
-
-  // Dynamic responsive CAD grid block-size computation
-  useWindowSize();
+function HomeInner() {
+  const { setGridMetrics } = useBubble();
+  const metricsCallback = useCallback(
+    (m: Parameters<typeof setGridMetrics>[0]) => setGridMetrics(m),
+    [setGridMetrics]
+  );
+  const { metrics } = useWindowSize(metricsCallback);
+  useLenis(metrics.isPinned);
 
   const [loaderFinished, setLoaderFinished] = useState(false);
 
   return (
-    <ThemeProvider>
-      {/* Cinematic Blueprint CAD Page Loader */}
+    <>
       <PageLoader onComplete={() => setLoaderFinished(true)} />
 
-      {/* Global Traveling 3D Three.js Particle Bubble Scene (vanlent.dev 1:1) */}
-      <GlobalBubbleScene />
+      <BubbleScene />
 
-      {/* Main Experience Canvas */}
       <div
         id="main-content"
         style={{
           position: 'relative',
-          minHeight: '100vh',
           backgroundColor: 'var(--bg-canvas)',
-          opacity: loaderFinished ? 1 : 0.98,
+          opacity: loaderFinished ? 1 : 0,
           transition: 'opacity 0.5s ease',
         }}
       >
@@ -51,6 +51,18 @@ export default function Home() {
           <ContactFooter />
         </main>
       </div>
+    </>
+  );
+}
+
+export default function Home() {
+  return (
+    <ThemeProvider>
+      <ScrollProvider>
+        <BubbleProvider>
+          <HomeInner />
+        </BubbleProvider>
+      </ScrollProvider>
     </ThemeProvider>
   );
 }

@@ -1,48 +1,27 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { ArrowUpRight, Check } from 'lucide-react';
-import { sound } from '@/utils/sound';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect, useState } from 'react';
+import { PinnedSection } from '@/components/PinnedSection';
+import { useScrollProgress } from '@/context/ScrollContext';
+import { scaleFontSize } from '@/lib/grid';
 
 export function ContactFooter() {
+  const scrollCtx = useScrollProgress();
+  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.footer;
+  const [visible, setVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-  });
-  const sectionRef = useRef<HTMLElement>(null);
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+    setVisible(progress >= 0.98);
+  }, [progress]);
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.contact-reveal',
-        { y: 50, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 70%',
-            toggleActions: 'play none none none',
-          },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  const bs = 90;
+  const headingSize = scaleFontSize(35.07, 3.46, bs);
+  const bodySize = scaleFontSize(18.53, 3.46, bs);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sound.playClick(1500);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -51,242 +30,93 @@ export function ContactFooter() {
   };
 
   return (
-    <footer
-      id="contact"
-      ref={sectionRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '100vh',
-        padding: 'clamp(64px, 8vw, 120px) 0 40px',
-        borderTop: '1px solid var(--border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-canvas)',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Docking target */}
-      <div
-        data-bubble-target="true"
-        data-section="footer"
-        style={{
-          position: 'absolute',
-          top: '15%',
-          right: '10%',
-          width: 'clamp(220px, 22vw, 320px)',
-          height: 'clamp(220px, 22vw, 320px)',
-          pointerEvents: 'none',
-          zIndex: 4,
-        }}
-      />
-
-      <div className="content-constraint" style={{ width: '100%' }}>
-        {/* Large Title */}
-        <div className="contact-reveal" style={{ marginBottom: 'clamp(40px, 5vw, 72px)' }}>
-          <h2
-            className="font-display"
-            style={{
-              fontSize: 'clamp(48px, 8vw, 120px)',
-              fontWeight: 100,
-              letterSpacing: '-0.03em',
-              lineHeight: 0.9,
-              textTransform: 'uppercase',
-              color: 'var(--text-primary)',
-            }}
-          >
-            LET&apos;S WORK
-            <br />
-            <span style={{ color: 'var(--text-secondary)' }}>TOGETHER</span>
-          </h2>
+    <PinnedSection id="footer" pinned={false}>
+      <div className="section-grid-inner footer-grid">
+        <div className={`footer-block ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '1 / 7', gridRow: '3 / 6' }}>
+          <h3 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase' }}>Contact</h3>
+          <a href="mailto:contact@kern.dev" style={{ fontSize: bodySize, color: 'var(--text-secondary)' }}>contact@kern.dev</a>
         </div>
 
-        {/* 2-Column: Contact Info + Form */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: 'clamp(32px, 5vw, 64px)',
-            marginBottom: '64px',
-          }}
-        >
-          {/* Contact Details */}
-          <div className="contact-reveal" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <a
-                href="mailto:contact@miloszwiater.dev"
-                data-cursor="hover"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '14px',
-                  color: 'var(--text-primary)',
-                  textDecoration: 'none',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                contact@miloszwiater.dev
-              </a>
-
-              <div
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  color: 'var(--text-tertiary)',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                WARSAW, POLAND — CET / CEST
-              </div>
-            </div>
-
-            <div
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.7,
-                maxWidth: '400px',
-                borderTop: '1px solid var(--border-subtle)',
-                paddingTop: '20px',
-              }}
-            >
-              Available for select commissions and ongoing partnerships. Let&apos;s discuss your next project.
-            </div>
-          </div>
-
-          {/* Form */}
-          <div className="contact-reveal">
-            {submitted ? (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '20px',
-                  border: '1px solid var(--border-medium)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '12px',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                <Check size={16} />
-                <span>MESSAGE SENT. WILL RESPOND WITHIN 24H.</span>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <input
-                  type="text"
-                  required
-                  placeholder="NAME"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '12px',
-                    letterSpacing: '0.06em',
-                    backgroundColor: 'var(--bg-surface)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease',
-                  }}
-                />
-
-                <input
-                  type="email"
-                  required
-                  placeholder="EMAIL"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '12px',
-                    letterSpacing: '0.06em',
-                    backgroundColor: 'var(--bg-surface)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease',
-                  }}
-                />
-
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="PROJECT DETAILS"
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '12px',
-                    letterSpacing: '0.06em',
-                    backgroundColor: 'var(--bg-surface)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    resize: 'none',
-                    transition: 'border-color 0.2s ease',
-                  }}
-                />
-
-                <button
-                  type="submit"
-                  className="magnetic-button"
-                  data-cursor="contact"
-                  data-cursor-text="SEND"
-                  style={{
-                    width: '100%',
-                    cursor: 'pointer',
-                    marginTop: '4px',
-                  }}
-                >
-                  <span className="magnetic-button__bg" />
-                  <span
-                    style={{
-                      position: 'relative',
-                      zIndex: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>SEND MESSAGE</span>
-                    <ArrowUpRight size={14} />
-                  </span>
-                </button>
-              </form>
-            )}
-          </div>
+        <div className={`footer-block ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '1 / 7', gridRow: '6 / 9', transitionDelay: '0.1s' }}>
+          <h3 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase' }}>Information</h3>
+          <p style={{ fontSize: bodySize, color: 'var(--text-secondary)' }}>Available for select commissions and ongoing partnerships.</p>
         </div>
 
-        {/* Clean Footer */}
-        <div
-          className="contact-reveal"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingTop: '20px',
-            borderTop: '1px solid var(--border-subtle)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
-            color: 'var(--text-tertiary)',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <div>© {new Date().getFullYear()} MIŁOSZ WIATER</div>
-          <div>WARSAW, POLAND</div>
+        <div className={`footer-form-wrap ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '15 / 21', gridRow: '3 / 9' }}>
+          <h3 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase', marginBottom: 16 }}>Connect</h3>
+          {submitted ? (
+            <p className="font-mono" style={{ fontSize: bodySize }}>Message received</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="footer-form">
+              <input required placeholder="Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <input required type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+              <textarea required rows={3} placeholder="Message" value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} />
+              <button type="submit">Send Message</button>
+            </form>
+          )}
+        </div>
+
+        <div className={`footer-legal font-mono ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '1 / 9', gridRow: '9 / 10' }}>
+          <span>© {new Date().getFullYear()} KERN</span>
         </div>
       </div>
-    </footer>
+
+      <style jsx>{`
+        .footer-grid {
+          padding-top: calc(var(--grid-block-size) * 2);
+          padding-bottom: var(--grid-block-size);
+        }
+        .footer-block,
+        .footer-form-wrap,
+        .footer-legal {
+          opacity: 0;
+          transform: translateY(12px);
+          transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .footer-block--in {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .footer-form {
+          display: flex;
+          flex-direction: column;
+          gap: var(--grid-block-size);
+        }
+        .footer-form input,
+        .footer-form textarea {
+          width: 100%;
+          padding: 8px 4px;
+          font-family: var(--font-mono);
+          font-size: 18.53px;
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid var(--border-primary);
+          color: var(--text-primary);
+          outline: none;
+        }
+        .footer-form button {
+          align-self: flex-start;
+          padding: 12px 24px;
+          font-family: var(--font-mono);
+          font-size: 14px;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          border: 1px solid var(--border-primary);
+          color: var(--text-primary);
+          transition: background 0.3s ease;
+        }
+        .footer-form button:hover {
+          background: rgba(67, 202, 188, 0.2);
+        }
+        .footer-legal {
+          font-size: 16.53px;
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          border-top: 1px solid var(--border-primary);
+          padding-top: 8px;
+        }
+      `}</style>
+    </PinnedSection>
   );
 }

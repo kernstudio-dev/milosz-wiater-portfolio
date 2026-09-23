@@ -1,246 +1,125 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import Image from 'next/image';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { PinnedSection } from '@/components/PinnedSection';
+import { useScrollProgress } from '@/context/ScrollContext';
+import { ABOUT_TICKER } from '@/lib/motionMap';
+import { scaleFontSize } from '@/lib/grid';
 
 const TECH_ITEMS = [
-  'NEXT.JS',
-  'REACT 19',
-  'TYPESCRIPT',
-  'NODE.JS',
-  'GSAP',
-  'THREE.JS',
-  'GLSL',
-  'PYTHON',
-  'FASTAPI',
-  'GEMINI API',
-  'FIGMA',
+  'NEXT.JS', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'GLSL', 'GSAP', 'LENIS',
+  'NODE.JS', 'PYTHON', 'FASTAPI', 'GEMINI', 'FIGMA', 'WEBGL', 'VERCEL',
+  'POSTGRESQL', 'DOCKER', 'WEBSOCKETS',
 ];
 
 export function TechPhilosophy() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const scrollCtx = useScrollProgress();
+  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.about;
+  const isPinned = typeof scrollCtx !== 'number' && scrollCtx.isPinned('about');
 
-  useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+  const tickerT = Math.max(0, Math.min(1, (progress - ABOUT_TICKER.start) / (ABOUT_TICKER.end - ABOUT_TICKER.start)));
+  const tickerX = ABOUT_TICKER.px * tickerT;
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.about-reveal',
-        { y: 50, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 70%',
-            toggleActions: 'play none none none',
-          },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  const bs = 90;
+  const headingSize = scaleFontSize(43.07, 3.46, bs);
+  const bodySize = scaleFontSize(22.53, 3.46, bs);
 
   return (
-    <section
-      id="about"
-      ref={sectionRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '100vh',
-        padding: 'clamp(64px, 8vw, 120px) 0 48px',
-        borderTop: '1px solid var(--border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-canvas)',
-      }}
-    >
-      <div className="content-constraint" style={{ width: '100%' }}>
-        {/* Section Header */}
-        <div
-          className="about-reveal"
-          style={{
-            marginBottom: 'clamp(32px, 4vw, 56px)',
-            borderBottom: '1px solid var(--border-subtle)',
-            paddingBottom: '20px',
-          }}
-        >
-          <div className="tech-label" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
-            ABOUT
-          </div>
-          <h2
-            className="font-display"
-            style={{
-              fontSize: 'clamp(32px, 5.5vw, 68px)',
-              fontWeight: 200,
-              letterSpacing: '-0.02em',
-              textTransform: 'uppercase',
-              color: 'var(--text-primary)',
-              lineHeight: 0.95,
-            }}
-          >
-            MIŁOSZ WIATER
-          </h2>
+    <PinnedSection id="about">
+      <div className="section-grid-inner about-grid">
+        <div className={`about-heading border-draw ${isPinned ? 'is-visible' : ''}`} style={{ gridColumn: '1 / 8', gridRow: '3 / 5' }}>
+          <h2 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase' }}>KERN</h2>
+          <p className="about-tagline font-mono">Creative Development</p>
         </div>
 
-        {/* 2-Part Layout: Text + Portrait */}
+        <div className={`about-bio ${isPinned ? 'reveal-visible' : 'reveal-hidden'}`} style={{ gridColumn: '1 / 8', gridRow: '5 / 8' }}>
+          <p style={{ fontSize: bodySize, fontWeight: 200, lineHeight: 1.35, maxWidth: 520 }}>
+            I design and build digital products where strategy, interaction, development and visual identity work as one system.
+          </p>
+          <p className="about-secondary">
+            Working independently with founders, creative agencies, and product teams to engineer digital experiences that stand out without unnecessary noise.
+          </p>
+        </div>
+
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 'clamp(32px, 5vw, 64px)',
-            marginBottom: '48px',
-          }}
+          className={`about-portrait ${isPinned ? 'about-portrait--visible' : ''}`}
+          style={{ gridColumn: '15 / 21', gridRow: '3 / 8' }}
         >
-          {/* Editorial Text */}
-          <div className="about-reveal" style={{ display: 'flex', flexDirection: 'column', gap: '24px', justifyContent: 'center' }}>
-            <p
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(22px, 2.4vw, 36px)',
-                fontWeight: 200,
-                color: 'var(--text-primary)',
-                lineHeight: 1.35,
-                letterSpacing: '-0.015em',
-              }}
-            >
-              I design and build digital products where strategy, interaction, development and visual identity work as one system.
-            </p>
-
-            <p
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.7,
-                maxWidth: '520px',
-              }}
-            >
-              Working independently with founders, creative agencies, and product teams to engineer digital experiences that stand out without unnecessary noise.
-            </p>
-
-            {/* Docking target */}
-            <div
-              data-bubble-target="true"
-              data-section="about"
-              style={{
-                width: 'clamp(180px, 18vw, 260px)',
-                height: 'clamp(180px, 18vw, 260px)',
-                pointerEvents: 'none',
-                margin: '16px 0',
-              }}
-            />
-          </div>
-
-          {/* Portrait */}
-          <div
-            className="about-reveal"
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              minHeight: '420px',
-              backgroundColor: 'var(--bg-surface)',
-            }}
-          >
-            <Image
-              src="/images/milosz_portrait.jpg"
-              alt="Miłosz Wiater"
-              fill
-              sizes="(max-width: 768px) 100vw, 500px"
-              style={{ objectFit: 'cover' }}
-            />
-
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 35%)',
-              }}
-            />
-
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '18px',
-                left: '20px',
-                right: '20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'baseline',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: '#FAFAFA',
-                letterSpacing: '0.06em',
-                zIndex: 2,
-              }}
-            >
-              <span>MIŁOSZ WIATER</span>
-              <span style={{ opacity: 0.7 }}>WARSAW, PL</span>
-            </div>
+          <div className="about-portrait-placeholder">
+            <span className="font-mono">PORTRAIT</span>
           </div>
         </div>
 
-        {/* Technology Ticker */}
-        <div
-          className="about-reveal"
-          style={{
-            position: 'relative',
-            width: '100%',
-            overflow: 'hidden',
-            borderTop: '1px solid var(--border-subtle)',
-            borderBottom: '1px solid var(--border-subtle)',
-            padding: '14px 0',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              width: 'max-content',
-              animation: 'marquee 30s linear infinite',
-              gap: '40px',
-            }}
-          >
-            {[...TECH_ITEMS, ...TECH_ITEMS].map((item, index) => (
-              <span
-                key={`${item}-${index}`}
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-tertiary)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <span>{item}</span>
-                <span style={{ color: 'var(--text-quaternary)', fontSize: '8px' }}>—</span>
-              </span>
+        <div className="about-ticker-wrap" style={{ gridColumn: '1 / -1', gridRow: '9 / 10' }}>
+          <div className="about-ticker font-mono" style={{ transform: `translateX(-${tickerX}px)` }}>
+            {TECH_ITEMS.map((item) => (
+              <span key={item} className="about-ticker-item">{item}</span>
             ))}
           </div>
+          <span className="about-ticker-label font-mono">{`translateX: ${Math.round(tickerX)}px`}</span>
         </div>
       </div>
 
       <style jsx>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
+        .about-grid {
+          padding-top: calc(var(--grid-block-size) * 2);
+          padding-bottom: var(--grid-block-size);
+        }
+        .about-tagline {
+          font-size: 16.53px;
+          color: var(--text-tertiary);
+          margin-top: 8px;
+          letter-spacing: 0.08em;
+        }
+        .about-secondary {
+          margin-top: 16px;
+          font-size: 18.53px;
+          color: var(--text-secondary);
+          line-height: 1.6;
+          max-width: 480px;
+        }
+        .about-portrait-placeholder {
+          width: 100%;
+          height: 100%;
+          min-height: calc(var(--grid-block-size) * 5);
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-tertiary);
+          font-size: 11px;
+          clip-path: inset(100% 0 0 0);
+          transition: clip-path 2s ease;
+        }
+        .about-portrait--visible .about-portrait-placeholder {
+          clip-path: inset(0 0 0 0);
+        }
+        .about-ticker-wrap {
+          position: relative;
+          overflow: hidden;
+          border-top: 1px solid var(--border-primary);
+          padding: 12px 0;
+        }
+        .about-ticker {
+          display: flex;
+          gap: 40px;
+          width: max-content;
+          will-change: transform;
+        }
+        .about-ticker-item {
+          font-size: 16.53px;
+          letter-spacing: 0.12em;
+          color: var(--text-tertiary);
+          white-space: nowrap;
+        }
+        .about-ticker-label {
+          position: absolute;
+          right: 0;
+          top: 4px;
+          font-size: 11px;
+          color: var(--text-quaternary);
         }
       `}</style>
-    </section>
+    </PinnedSection>
   );
 }

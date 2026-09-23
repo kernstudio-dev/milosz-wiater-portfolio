@@ -1,272 +1,163 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
-import { ArrowUpRight } from 'lucide-react';
-import { PROJECTS, Project } from '@/data/projects';
-import { ProjectModal } from './ProjectModal';
-import { sound } from '@/utils/sound';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect, useRef, useState } from 'react';
+import { PinnedSection } from '@/components/PinnedSection';
+import { useScrollProgress } from '@/context/ScrollContext';
+import { useBubble } from '@/context/BubbleContext';
+import { PROJECTS } from '@/data/projects';
+import { WORK_SLIDE } from '@/lib/motionMap';
+import { scaleFontSize } from '@/lib/grid';
+
+const PROJECT_COLORS = ['#7a3d99', '#EA7317', '#005BF8', '#43cabc', '#86a29d'];
 
 export function SelectedWork() {
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const scrollCtx = useScrollProgress();
+  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.work;
+  const isPinned = typeof scrollCtx !== 'number' && scrollCtx.isPinned('work');
+  const { setWorkProjectColor } = useBubble();
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const stripRef = useRef<HTMLDivElement>(null);
+  const [projectIndex, setProjectIndex] = useState(0);
+  const [phase, setPhase] = useState<'idle' | 'hiding' | 'revealing'>('idle');
+  const lastThresholdRef = useRef(-1);
+  const switchingRef = useRef(false);
+
+  const slideT = Math.max(0, Math.min(1, (progress - WORK_SLIDE.start) / (WORK_SLIDE.end - WORK_SLIDE.start)));
+  const translateX = -WORK_SLIDE.px * slideT;
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+    if (!isPinned || switchingRef.current) return;
+    const thresholds = [0.5, 0.75];
+    let crossed = -1;
+    for (let i = 0; i < thresholds.length; i++) {
+      if (progress >= thresholds[i] && lastThresholdRef.current < i) {
+        crossed = i;
+      }
+    }
+    if (crossed < 0) return;
 
-    const section = sectionRef.current;
-    const strip = stripRef.current;
-    if (!section || !strip) return;
+    switchingRef.current = true;
+    lastThresholdRef.current = crossed;
+    setPhase('hiding');
 
-    const calculateDistance = () => {
-      return strip.scrollWidth - window.innerWidth + 120;
-    };
+    setTimeout(() => {
+      setProjectIndex((prev) => (prev + 1) % PROJECTS.length);
+      setWorkProjectColor(PROJECT_COLORS[(projectIndex + 1) % PROJECT_COLORS.length]);
+      setPhase('revealing');
+      setTimeout(() => {
+        setPhase('idle');
+        switchingRef.current = false;
+      }, 1000);
+    }, 1000);
+  }, [progress, isPinned, projectIndex, setWorkProjectColor]);
 
-    const ctx = gsap.context(() => {
-      const scrollDistance = calculateDistance();
+  useEffect(() => {
+    setWorkProjectColor(PROJECT_COLORS[projectIndex]);
+  }, [projectIndex, setWorkProjectColor]);
 
-      gsap.to(strip, {
-        x: () => -Math.max(0, strip.scrollWidth - window.innerWidth + 120),
-        ease: 'none',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: () => `+=${Math.max(1200, strip.scrollWidth - window.innerWidth + 600)}`,
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-      });
-    }, sectionRef);
-
-    return () => {
-      ctx.revert();
-    };
-  }, []);
-
-  const handleOpenProject = (project: Project) => {
-    sound.playClick(1400);
-    setSelectedProject(project);
-  };
+  const project = PROJECTS[projectIndex];
+  const bs = 90;
+  const titleSize = scaleFontSize(35.07, 3.46, bs);
 
   return (
-    <section
-      id="work"
-      ref={sectionRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '100vh',
-        backgroundColor: 'var(--bg-canvas)',
-        borderTop: '1px solid var(--border-subtle)',
-        borderBottom: '1px solid var(--border-subtle)',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-      }}
-    >
-      {/* Docking Target for Global Persistent Mesh (Upper-right during Selected Work) */}
+    <PinnedSection id="work">
       <div
-        data-bubble-target="true"
-        data-section="work"
+        className="work-scroll-content"
         style={{
-          position: 'absolute',
-          top: '12%',
-          right: '8%',
-          width: 'clamp(200px, 20vw, 300px)',
-          height: 'clamp(200px, 20vw, 300px)',
-          pointerEvents: 'none',
-          zIndex: 4,
-        }}
-      />
-
-      <div
-        ref={containerRef}
-        style={{
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: 'clamp(32px, 4vw, 56px) 0',
+          transform: `translateX(${translateX}px)`,
+          opacity: phase === 'hiding' ? 0.3 : 1,
+          transition: phase === 'hiding' ? 'opacity 0.15s ease' : 'opacity 0.6s ease',
         }}
       >
-        {/* Section Header: Minimal & Editorial */}
-        <div
-          className="content-constraint"
-          style={{
-            width: '100%',
-            marginBottom: 'clamp(28px, 3.5vw, 44px)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-          }}
-        >
-          <div className="tech-label" style={{ color: 'var(--text-secondary)' }}>
-            01 // SELECTED WORK
+        <div className="section-grid-inner work-grid">
+          <div className={`work-header border-draw ${isPinned ? 'is-visible' : ''}`} style={{ gridColumn: '1 / -1', gridRow: '3 / 4' }}>
+            <span className="work-index font-mono">01 — SELECTED WORK</span>
           </div>
 
           <div
+            className="work-mockup"
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-              flexWrap: 'wrap',
-              gap: '16px',
+              gridColumn: '6 / 14',
+              gridRow: '3 / 7',
+              opacity: phase === 'hiding' ? 0 : 1,
+              transform: phase === 'hiding' ? 'translateY(-100%)' : 'translateY(0)',
+              transition: 'transform 1s ease, opacity 0.15s ease',
             }}
           >
-            <h2
-              className="font-serif"
-              style={{
-                fontSize: 'clamp(32px, 5.5vw, 68px)',
-                fontWeight: 200,
-                letterSpacing: '-0.02em',
-                textTransform: 'uppercase',
-                color: 'var(--text-primary)',
-                lineHeight: 0.95,
-              }}
-            >
-              SELECTED WORK
-            </h2>
-
-            <p
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(13px, 1.1vw, 15px)',
-                fontWeight: 400,
-                color: 'var(--text-secondary)',
-                maxWidth: '460px',
-                lineHeight: 1.5,
-              }}
-            >
-              Curated digital artifacts, interactive WebGL explorations, and production AI platforms built with precision.
-            </p>
+            <div className="work-mockup-frame">
+              <div className="work-mockup-placeholder">
+                <span className="font-mono">{project.title}</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Horizontal Projects Strip (Master Translation Timeline) */}
-        <div
-          ref={stripRef}
-          className="project-strip-container"
-          style={{
-            paddingLeft: 'max(24px, calc((100vw - var(--grid-max-width)) / 2 + 24px))',
-            paddingRight: '60px',
-          }}
-        >
-          {PROJECTS.map((project, index) => (
-            <article
-              key={project.id}
-              className="project-card"
-              onClick={() => handleOpenProject(project)}
-              data-cursor="view"
-              data-cursor-text="VIEW"
-              style={{
-                cursor: 'pointer',
-              }}
-            >
-              {/* Visual Presentation Viewport */}
-              <div className="project-media-wrap">
-                <Image
-                  src={project.media.src}
-                  alt={project.media.alt}
-                  fill
-                  sizes="(max-width: 768px) 90vw, (max-width: 1440px) 45vw, 640px"
-                  className="project-media-img"
-                  priority={index < 2}
-                />
+          <div
+            className="work-meta"
+            style={{
+              gridColumn: '17 / 21',
+              gridRow: '3 / 7',
+              opacity: phase === 'hiding' ? 0 : 1,
+              transition: 'opacity 0.15s ease',
+            }}
+          >
+            <h3 style={{ fontSize: titleSize, fontWeight: 200, textTransform: 'uppercase' }}>{project.title}</h3>
+            <p className="work-desc">{project.description}</p>
+          </div>
 
-                {/* Subtle corner crosshairs */}
-                <span className="corner-crosshair corner-crosshair-tl" />
-                <span className="corner-crosshair corner-crosshair-tr" />
-                <span className="corner-crosshair corner-crosshair-bl" />
-                <span className="corner-crosshair corner-crosshair-br" />
-              </div>
-
-              {/* Minimal Editorial Annotation Bar */}
-              <div className="project-info-bar">
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    paddingBottom: '10px',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '11px',
-                      color: 'var(--text-secondary)',
-                      letterSpacing: '0.08em',
-                    }}
-                  >
-                    {project.number} // {project.category}
-                  </span>
-
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '11px',
-                      color: 'var(--text-tertiary)',
-                    }}
-                  >
-                    {project.year}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: '2px',
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: 'clamp(20px, 2.2vw, 28px)',
-                      fontWeight: 500,
-                      letterSpacing: '-0.02em',
-                      color: 'var(--text-primary)',
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {project.title}
-                  </h3>
-
-                  <div
-                    className="project-arrow"
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <ArrowUpRight size={18} />
-                  </div>
-               </div>
-              </div>
-            </article>
-          ))}
+          <div className="work-footer" style={{ gridColumn: '1 / -1', gridRow: '8 / 9' }}>
+            <span className="font-mono work-project-name">{project.title}</span>
+          </div>
         </div>
       </div>
 
-      {/* Deep-Dive Project Modal */}
-      {selectedProject && (
-        <ProjectModal
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-        />
-      )}
-    </section>
+      <style jsx>{`
+        .work-scroll-content {
+          will-change: transform;
+        }
+        .work-grid {
+          padding-top: calc(var(--grid-block-size) * 2);
+          padding-bottom: var(--grid-block-size);
+        }
+        .work-index {
+          font-size: 16.53px;
+          color: var(--text-tertiary);
+          letter-spacing: 0.1em;
+        }
+        .work-mockup-frame {
+          width: 100%;
+          height: 100%;
+          border: 1px solid var(--border-primary);
+          background: var(--bg-elevated);
+          overflow: hidden;
+        }
+        .work-mockup-placeholder {
+          width: 100%;
+          height: 100%;
+          min-height: calc(var(--grid-block-size) * 4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-secondary);
+          font-size: 12px;
+          letter-spacing: 0.12em;
+        }
+        .work-desc {
+          margin-top: 12px;
+          font-size: 18.53px;
+          color: var(--text-secondary);
+          line-height: 1.5;
+          max-width: 360px;
+        }
+        .work-footer {
+          display: flex;
+          align-items: center;
+          border-top: 1px solid var(--border-primary);
+          padding-top: 8px;
+        }
+        .work-project-name {
+          font-size: 16.53px;
+          color: var(--text-secondary);
+        }
+      `}</style>
+    </PinnedSection>
   );
 }
