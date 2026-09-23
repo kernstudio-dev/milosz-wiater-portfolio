@@ -314,14 +314,13 @@ export function GlobalBubbleScene() {
               cavity = 0.0;
               scale = 1.06;
             } else if (section === 'services') {
-              // Warm amber / orange morph
-              colorHex = '#D97706';
-              wobble = 0.88;
+              colorHex = isDark ? '#E8E8E8' : '#1A1A1A';
+              wobble = 0.65;
               curl = 0.22;
               curlFreq = 0.24;
-              spike = 0.92;
+              spike = 0.55;
               cavity = 0.0;
-              scale = 1.08;
+              scale = 1.06;
             } else if (section === 'about') {
               // White / pale grey organic cavity shell
               colorHex = isDark ? '#FFFFFF' : '#404040';
@@ -411,24 +410,24 @@ export function GlobalBubbleScene() {
         }
       }
 
-      // Physics lerping for responsive, jitter-free scroll following
-      currentScreenX += (targetScreenX - currentScreenX) * 0.12;
-      currentScreenY += (targetScreenY - currentScreenY) * 0.12;
-      currentScale += (targetScale - currentScale) * 0.08;
+      // Tight scroll following — stops when scrolling stops
+      currentScreenX += (targetScreenX - currentScreenX) * 0.4;
+      currentScreenY += (targetScreenY - currentScreenY) * 0.4;
+      currentScale += (targetScale - currentScale) * 0.3;
 
-      currentWobble += (targetWobble - currentWobble) * 0.08;
-      currentCurl += (targetCurl - currentCurl) * 0.08;
-      currentCurlFreq += (targetCurlFreq - currentCurlFreq) * 0.08;
-      currentSpike += (targetSpike - currentSpike) * 0.08;
-      currentCavity += (targetCavity - currentCavity) * 0.08;
+      currentWobble += (targetWobble - currentWobble) * 0.25;
+      currentCurl += (targetCurl - currentCurl) * 0.25;
+      currentCurlFreq += (targetCurlFreq - currentCurlFreq) * 0.25;
+      currentSpike += (targetSpike - currentSpike) * 0.25;
+      currentCavity += (targetCavity - currentCavity) * 0.25;
 
       // Color interpolation
-      material.color.lerp(targetColor, 0.08);
-      dustMaterial.color.lerp(targetColor, 0.08);
+      material.color.lerp(targetColor, 0.2);
+      dustMaterial.color.lerp(targetColor, 0.2);
 
       // Micro mouse parallax
-      mouseX += (targetMouseX - mouseX) * 0.05;
-      mouseY += (targetMouseY - mouseY) * 0.05;
+      mouseX += (targetMouseX - mouseX) * 0.08;
+      mouseY += (targetMouseY - mouseY) * 0.08;
 
       // Align camera to target screen coordinates (only camera view offset writes screen position)
       alignCameraToScreenPoint(camera, currentScreenX, currentScreenY, width, height);

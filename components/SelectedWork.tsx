@@ -124,7 +124,7 @@ export function SelectedWork() {
               className="font-serif"
               style={{
                 fontSize: 'clamp(32px, 5.5vw, 68px)',
-                fontWeight: 400,
+                fontWeight: 200,
                 letterSpacing: '-0.02em',
                 textTransform: 'uppercase',
                 color: 'var(--text-primary)',
@@ -253,50 +253,7 @@ export function SelectedWork() {
                   >
                     <ArrowUpRight size={18} />
                   </div>
-                </div>
-
-                <p
-                  style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '13px',
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.5,
-                    marginTop: '2px',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {project.description}
-                </p>
-
-                {/* Minimal Tech Tag List */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    marginTop: '8px',
-                  }}
-                >
-                  {project.technologies.slice(0, 4).map((tech) => (
-                    <span
-                      key={tech}
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '10px',
-                        letterSpacing: '0.06em',
-                        color: 'var(--text-tertiary)',
-                        padding: '2px 8px',
-                        border: '1px solid var(--border-subtle)',
-                        background: 'var(--bg-canvas)',
-                      }}
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
+               </div>
               </div>
             </article>
           ))}

@@ -88,8 +88,9 @@ html {
   text-rendering: optimizeLegibility;
 }
 
-.font-serif {
-  font-family: var(--font-serif), 'Playfair Display', Georgia, serif;
+.font-serif,
+.font-display {
+  font-family: var(--font-display), 'Montserrat', -apple-system, sans-serif;
 }
 
 .font-sans {
@@ -101,12 +102,12 @@ html {
 }
 
 .hero-editorial-title {
-  font-family: var(--font-serif), 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display), 'Montserrat', -apple-system, sans-serif;
   font-size: clamp(70px, 7.5vw, 145px);
   line-height: 0.9;
   letter-spacing: -0.03em;
   text-transform: uppercase;
-  font-weight: 400;
+  font-weight: 100;
 }
 
 body {

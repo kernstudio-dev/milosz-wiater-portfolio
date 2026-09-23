@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { sound } from '@/utils/sound';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 interface Capability {
   id: string;
   number: string;
   title: string;
   description: string;
-  details: string[];
 }
 
 const CAPABILITIES: Capability[] = [
@@ -17,54 +17,69 @@ const CAPABILITIES: Capability[] = [
     id: 'frontend',
     number: '01',
     title: 'FRONT-END DEVELOPMENT',
-    description:
-      'Architecting responsive, high-performance web interfaces with strict type-safety, semantic accessibility, and fluid layouts.',
-    details: ['React & Next.js 15', 'TypeScript Strict Mode', 'Component Architecture', 'Performance Optimization'],
+    description: 'React, Next.js 15, TypeScript, component architecture, performance optimization.',
   },
   {
     id: 'webapps',
     number: '02',
     title: 'WEB APPLICATIONS',
-    description:
-      'Full-stack platform development with resilient backend architectures, real-time data sync, and clean API designs.',
-    details: ['Full-Stack Next.js', 'REST & WebSocket APIs', 'Database & ORM Integration', 'Authentication & Security'],
+    description: 'Full-stack platforms, REST & WebSocket APIs, database integration, authentication.',
   },
   {
     id: 'uiux',
     number: '03',
     title: 'UI / UX DESIGN',
-    description:
-      'Translating complex business concepts into minimal, intuitive visual systems with architectural hierarchy and negative space.',
-    details: ['Design Systems', 'Design Tokens', 'Interaction Prototypes', 'Editorial Typography'],
+    description: 'Design systems, interaction prototypes, editorial typography, spatial hierarchy.',
   },
   {
     id: 'motion',
     number: '04',
     title: 'MOTION & INTERACTION',
-    description:
-      'Crafting microinteractions, scroll-driven timelines, and WebGL particle shaders that make digital products feel alive.',
-    details: ['GSAP & ScrollTrigger', 'Three.js & GLSL Shaders', 'Lenis Smooth Scroll', 'Physics & Easing Choreography'],
+    description: 'GSAP, ScrollTrigger, Three.js, GLSL shaders, physics choreography.',
   },
   {
     id: 'ai',
     number: '05',
     title: 'AI INTEGRATION',
-    description:
-      'Implementing multimodal AI agent pipelines, real-time voice streaming, and dynamic tool calling in production environments.',
-    details: ['Gemini Live WebSocket APIs', 'FastAPI Microservices', 'Autonomous Agent Dispatchers', 'Context Graph Memory'],
+    description: 'Gemini Live API, autonomous agents, FastAPI microservices, real-time streaming.',
   },
   {
     id: 'automation',
     number: '06',
     title: 'AUTOMATION SYSTEMS',
-    description:
-      'Building robust workflow automations, financial webhook dispatchers, and data synchronization tools that eliminate friction.',
-    details: ['Webhook Pipelines', 'Low-Latency Data Streams', 'Background Task Workers', 'CI/CD Automation'],
+    description: 'Webhook pipelines, data synchronization, background workers, CI/CD.',
   },
 ];
 
 export function ServicesIndex() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      // Scroll-driven entry reveal
+      gsap.fromTo(
+        '.services-reveal',
+        { y: 60, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1,
+          stagger: 0.08,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 75%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
 
   const handleSelect = (idx: number) => {
     if (idx !== activeIndex) {
@@ -73,25 +88,23 @@ export function ServicesIndex() {
     }
   };
 
-  const activeCapability = CAPABILITIES[activeIndex];
-
   return (
     <section
       id="services"
+      ref={sectionRef}
       style={{
         position: 'relative',
         width: '100%',
         minHeight: '100vh',
         padding: 'clamp(64px, 8vw, 120px) 0',
         borderTop: '1px solid var(--border-subtle)',
-        borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         backgroundColor: 'var(--bg-canvas)',
       }}
     >
-      {/* Docking Target for Global Persistent Mesh (Right side during Services, morphing to amber/orange) */}
+      {/* Docking Target */}
       <div
         data-bubble-target="true"
         data-section="services"
@@ -107,8 +120,9 @@ export function ServicesIndex() {
       />
 
       <div className="content-constraint" style={{ width: '100%' }}>
-        {/* Section Top Label */}
+        {/* Section Header */}
         <div
+          className="services-reveal"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -120,240 +134,134 @@ export function ServicesIndex() {
             gap: '16px',
           }}
         >
-          <div className="tech-label" style={{ color: 'var(--text-secondary)' }}>
-            02 // SERVICES & CAPABILITIES
-          </div>
-
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--text-tertiary)',
-              letterSpacing: '0.06em',
-            }}
-          >
-            ACTIVE DISCIPLINE: {activeCapability.number} / 06
-          </div>
-        </div>
-
-        {/* Master Editorial 2-Column Layout */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 'clamp(40px, 6vw, 80px)',
-            alignItems: 'start',
-          }}
-        >
-          {/* LEFT COLUMN: Editorial Typography & Context */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '24px',
-              maxWidth: '520px',
-            }}
-          >
+          <div>
+            <div className="tech-label" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+              CAPABILITIES
+            </div>
             <h2
-              className="font-serif"
+              className="font-display"
               style={{
                 fontSize: 'clamp(38px, 5vw, 76px)',
-                fontWeight: 400,
+                fontWeight: 200,
                 letterSpacing: '-0.025em',
                 lineHeight: 0.95,
                 textTransform: 'uppercase',
                 color: 'var(--text-primary)',
               }}
             >
-              ENGINEERING
-              <br />
-              <span style={{ color: 'var(--text-secondary)' }}>PRECISION</span>
-              <br />
-              EXPERIENCES
+              SERVICES
             </h2>
-
-            <p
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(14px, 1.2vw, 17px)',
-                fontWeight: 400,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.6,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Strategic architecture, bespoke motion, and creative development working as a single coherent discipline.
-              Every interface is calibrated for clarity, responsiveness, and performance.
-            </p>
-
-            {/* Active Capability Deep-Dive Detail Card (Reveals with clip-path) */}
-            <div
-              className="corner-box"
-              style={{
-                marginTop: '16px',
-                padding: '24px',
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-medium)',
-              }}
-            >
-              <span className="corner-crosshair corner-crosshair-tl" />
-              <span className="corner-crosshair corner-crosshair-tr" />
-              <span className="corner-crosshair corner-crosshair-bl" />
-              <span className="corner-crosshair corner-crosshair-br" />
-
-              <div
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  color: 'var(--text-secondary)',
-                  letterSpacing: '0.08em',
-                  marginBottom: '10px',
-                }}
-              >
-                CAPABILITY SPECIFICATION // {activeCapability.number}
-              </div>
-
-              <div
-                style={{
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '14px',
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.6,
-                  marginBottom: '18px',
-                }}
-              >
-                {activeCapability.description}
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                }}
-              >
-                {activeCapability.details.map((detail) => (
-                  <span
-                    key={detail}
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '10px',
-                      color: 'var(--text-tertiary)',
-                      padding: '3px 8px',
-                      border: '1px solid var(--border-subtle)',
-                      background: 'var(--bg-canvas)',
-                    }}
-                  >
-                    {detail}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <a
-                href="#contact"
-                className="magnetic-button"
-                data-cursor="contact"
-                data-cursor-text="CONTACT"
-                style={{
-                  marginTop: '8px',
-                  textDecoration: 'none',
-                }}
-              >
-                <span className="magnetic-button__bg" />
-                <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>DISCUSS A PROJECT</span>
-                  <ArrowUpRight size={14} />
-                </span>
-              </a>
-            </div>
           </div>
+        </div>
 
-          {/* RIGHT COLUMN: Interactive 01..06 Capabilities Index */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              borderTop: '1px solid var(--border-subtle)',
-            }}
-          >
-            {CAPABILITIES.map((cap, idx) => {
-              const isActive = idx === activeIndex;
+        {/* Capability Index */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            borderTop: '1px solid var(--border-subtle)',
+          }}
+        >
+          {CAPABILITIES.map((cap, idx) => {
+            const isActive = idx === activeIndex;
 
-              return (
+            return (
+              <div
+                key={cap.id}
+                className="services-reveal"
+                onClick={() => handleSelect(idx)}
+                onMouseEnter={() => handleSelect(idx)}
+                data-cursor="hover"
+                style={{
+                  padding: 'clamp(20px, 2.5vw, 32px) 0',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  transition: 'all 0.3s ease',
+                }}
+              >
                 <div
-                  key={cap.id}
-                  onClick={() => handleSelect(idx)}
-                  onMouseEnter={() => handleSelect(idx)}
-                  data-cursor="hover"
                   style={{
-                    padding: '28px 0',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    cursor: 'pointer',
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    transition: 'all 0.3s ease',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: '20px',
                   }}
                 >
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'baseline',
-                      justifyContent: 'space-between',
                       gap: '20px',
                     }}
                   >
-                    <div
+                    <span
                       style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: '20px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '13px',
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                        transition: 'color 0.3s ease',
+                        minWidth: '24px',
                       }}
                     >
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '13px',
-                          color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                          transition: 'color 0.3s ease',
-                        }}
-                      >
-                        {cap.number}
-                      </span>
+                      {cap.number}
+                    </span>
 
-                      <h3
-                        style={{
-                          fontFamily: 'var(--font-sans)',
-                          fontSize: 'clamp(20px, 2.5vw, 34px)',
-                          fontWeight: isActive ? 500 : 300,
-                          letterSpacing: '-0.02em',
-                          textTransform: 'uppercase',
-                          color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          transition: 'color 0.3s ease, transform 0.3s ease',
-                          transform: isActive ? 'translateX(8px)' : 'translateX(0)',
-                        }}
-                      >
-                        {cap.title}
-                      </h3>
-                    </div>
-
-                    <div
+                    <h3
                       style={{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
-                        border: '1px solid var(--border-medium)',
-                        transition: 'background-color 0.3s ease, border-color 0.3s ease',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: 'clamp(20px, 2.5vw, 34px)',
+                        fontWeight: isActive ? 400 : 300,
+                        letterSpacing: '-0.02em',
+                        textTransform: 'uppercase',
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        transition: 'color 0.3s ease, transform 0.3s ease',
+                        transform: isActive ? 'translateX(8px)' : 'translateX(0)',
                       }}
-                    />
+                    >
+                      {cap.title}
+                    </h3>
                   </div>
+
+                  <div
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
+                      border: '1px solid var(--border-medium)',
+                      transition: 'background-color 0.3s ease',
+                      flexShrink: 0,
+                    }}
+                  />
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Description reveals when active */}
+                <div
+                  style={{
+                    maxHeight: isActive ? '60px' : '0',
+                    overflow: 'hidden',
+                    transition: 'max-height 0.4s ease',
+                    paddingLeft: '44px',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '12px',
+                      color: 'var(--text-tertiary)',
+                      lineHeight: 1.6,
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    {cap.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

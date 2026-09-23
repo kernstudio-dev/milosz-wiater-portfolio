@@ -1,33 +1,62 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import Image from 'next/image';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const TECH_ITEMS = [
   'NEXT.JS',
   'REACT 19',
   'TYPESCRIPT',
   'NODE.JS',
-  'GSAP & SCROLLTRIGGER',
-  'THREE.JS / WEBGL',
-  'GLSL SHADERS',
-  'PYTHON 3.12',
+  'GSAP',
+  'THREE.JS',
+  'GLSL',
+  'PYTHON',
   'FASTAPI',
-  'GEMINI LIVE API',
-  'AUTOMATION PIPELINES',
+  'GEMINI API',
   'FIGMA',
 ];
 
 export function TechPhilosophy() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.about-reveal',
+        { y: 50, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1,
+          stagger: 0.1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 70%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <section
       id="about"
+      ref={sectionRef}
       style={{
         position: 'relative',
         width: '100%',
         minHeight: '100vh',
         padding: 'clamp(64px, 8vw, 120px) 0 48px',
         borderTop: '1px solid var(--border-subtle)',
-        borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -35,89 +64,51 @@ export function TechPhilosophy() {
       }}
     >
       <div className="content-constraint" style={{ width: '100%' }}>
-        {/* Section Top Header */}
+        {/* Section Header */}
         <div
+          className="about-reveal"
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
             marginBottom: 'clamp(32px, 4vw, 56px)',
             borderBottom: '1px solid var(--border-subtle)',
             paddingBottom: '20px',
-            flexWrap: 'wrap',
-            gap: '16px',
           }}
         >
-          <div>
-            <div className="tech-label" style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              03 // ABOUT
-            </div>
-            <h2
-              className="font-serif"
-              style={{
-                fontSize: 'clamp(32px, 5.5vw, 68px)',
-                fontWeight: 400,
-                letterSpacing: '-0.02em',
-                textTransform: 'uppercase',
-                color: 'var(--text-primary)',
-                lineHeight: 0.95,
-              }}
-            >
-              ABOUT
-            </h2>
+          <div className="tech-label" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+            ABOUT
           </div>
-
-          <div
+          <h2
+            className="font-display"
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.06em',
+              fontSize: 'clamp(32px, 5.5vw, 68px)',
+              fontWeight: 200,
+              letterSpacing: '-0.02em',
+              textTransform: 'uppercase',
+              color: 'var(--text-primary)',
+              lineHeight: 0.95,
             }}
           >
-            STRATEGY // DESIGN // CODE
-          </div>
+            MIŁOSZ WIATER
+          </h2>
         </div>
 
-        {/* Master 3-Column Framed Editorial Composition */}
+        {/* 2-Part Layout: Text + Portrait */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            border: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-surface)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 'clamp(32px, 5vw, 64px)',
             marginBottom: '48px',
           }}
         >
-          {/* COLUMN 1: SHORT EDITORIAL STATEMENT */}
-          <div
-            style={{
-              padding: 'clamp(28px, 4vw, 52px)',
-              borderRight: '1px solid var(--border-subtle)',
-              borderBottom: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              minHeight: '380px',
-            }}
-          >
-            <div
-              className="tech-label"
-              style={{
-                color: 'var(--text-tertiary)',
-                marginBottom: '16px',
-              }}
-            >
-              PHILOSOPHY
-            </div>
-
+          {/* Editorial Text */}
+          <div className="about-reveal" style={{ display: 'flex', flexDirection: 'column', gap: '24px', justifyContent: 'center' }}>
             <p
               style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 'clamp(20px, 2.2vw, 32px)',
-                fontWeight: 400,
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(22px, 2.4vw, 36px)',
+                fontWeight: 200,
                 color: 'var(--text-primary)',
-                lineHeight: 1.4,
+                lineHeight: 1.35,
                 letterSpacing: '-0.015em',
               }}
             >
@@ -127,91 +118,54 @@ export function TechPhilosophy() {
             <p
               style={{
                 fontFamily: 'var(--font-sans)',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: 'var(--text-secondary)',
-                lineHeight: 1.6,
-                marginTop: '20px',
+                lineHeight: 1.7,
+                maxWidth: '520px',
               }}
             >
               Working independently with founders, creative agencies, and product teams to engineer digital experiences that stand out without unnecessary noise.
             </p>
-          </div>
 
-          {/* COLUMN 2: SINGLE PERSISTENT MESH DOCKING TARGET */}
-          <div
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '24px',
-              borderRight: '1px solid var(--border-subtle)',
-              borderBottom: '1px solid var(--border-subtle)',
-              minHeight: '380px',
-              backgroundColor: 'var(--bg-canvas)',
-            }}
-          >
-            {/* The persistent 3D Mesh Docking Point */}
+            {/* Docking target */}
             <div
               data-bubble-target="true"
               data-section="about"
               style={{
-                width: 'clamp(220px, 22vw, 320px)',
-                height: 'clamp(220px, 22vw, 320px)',
-                position: 'relative',
+                width: 'clamp(180px, 18vw, 260px)',
+                height: 'clamp(180px, 18vw, 260px)',
                 pointerEvents: 'none',
+                margin: '16px 0',
               }}
             />
-
-            {/* Corner Crosshairs */}
-            <span className="corner-crosshair corner-crosshair-tl" />
-            <span className="corner-crosshair corner-crosshair-tr" />
-            <span className="corner-crosshair corner-crosshair-bl" />
-            <span className="corner-crosshair corner-crosshair-br" />
-
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '20px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
-                color: 'var(--text-tertiary)',
-                letterSpacing: '0.08em',
-              }}
-            >
-              FIG. 03 // PROCEDURAL CAVITY
-            </div>
           </div>
 
-          {/* COLUMN 3: EDITORIAL PORTRAIT / FRAMED COMPOSITION */}
+          {/* Portrait */}
           <div
+            className="about-reveal"
             style={{
               position: 'relative',
               overflow: 'hidden',
-              minHeight: '380px',
-              borderBottom: '1px solid var(--border-subtle)',
+              minHeight: '420px',
               backgroundColor: 'var(--bg-surface)',
             }}
           >
             <Image
               src="/images/milosz_portrait.jpg"
-              alt="Miłosz Wiater - Creative Developer"
+              alt="Miłosz Wiater"
               fill
-              sizes="(max-width: 768px) 100vw, 400px"
+              sizes="(max-width: 768px) 100vw, 500px"
               style={{ objectFit: 'cover' }}
             />
 
-            {/* Subtle Overlay gradient for text legibility */}
             <div
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%)',
+                background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 35%)',
               }}
             />
 
-            {/* Portrait Annotation */}
             <div
               style={{
                 position: 'absolute',
@@ -231,17 +185,12 @@ export function TechPhilosophy() {
               <span>MIŁOSZ WIATER</span>
               <span style={{ opacity: 0.7 }}>WARSAW, PL</span>
             </div>
-
-            {/* Corner Crosshairs */}
-            <span className="corner-crosshair corner-crosshair-tl" />
-            <span className="corner-crosshair corner-crosshair-tr" />
-            <span className="corner-crosshair corner-crosshair-bl" />
-            <span className="corner-crosshair corner-crosshair-br" />
           </div>
         </div>
 
-        {/* TECHNOLOGY RAIL (Thin horizontal ticker under About) */}
+        {/* Technology Ticker */}
         <div
+          className="about-reveal"
           style={{
             position: 'relative',
             width: '100%',
@@ -249,18 +198,16 @@ export function TechPhilosophy() {
             borderTop: '1px solid var(--border-subtle)',
             borderBottom: '1px solid var(--border-subtle)',
             padding: '14px 0',
-            backgroundColor: 'var(--bg-canvas)',
           }}
         >
           <div
             style={{
               display: 'flex',
               width: 'max-content',
-              animation: 'marquee 35s linear infinite',
+              animation: 'marquee 30s linear infinite',
               gap: '40px',
             }}
           >
-            {/* Duplicate array for seamless infinite loop */}
             {[...TECH_ITEMS, ...TECH_ITEMS].map((item, index) => (
               <span
                 key={`${item}-${index}`}
@@ -269,7 +216,7 @@ export function TechPhilosophy() {
                   fontSize: '11px',
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: 'var(--text-secondary)',
+                  color: 'var(--text-tertiary)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '16px',
@@ -277,7 +224,7 @@ export function TechPhilosophy() {
                 }}
               >
                 <span>{item}</span>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '8px' }}>—</span>
+                <span style={{ color: 'var(--text-quaternary)', fontSize: '8px' }}>—</span>
               </span>
             ))}
           </div>

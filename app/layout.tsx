@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
-import { Playfair_Display, Inter, IBM_Plex_Mono } from 'next/font/google';
+import { Montserrat, Inter, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { CustomCursor } from '@/components/CustomCursor';
 
-const playfair = Playfair_Display({
+const montserrat = Montserrat({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-serif',
-  weight: ['400', '500', '600', '700', '800'],
-  style: ['normal', 'italic'],
+  variable: '--font-display',
+  weight: ['100', '200', '300', '400', '500'],
+  style: ['normal'],
 });
 
 const inter = Inter({
@@ -110,7 +110,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`${montserrat.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <head>
         <script
           type="application/ld+json"

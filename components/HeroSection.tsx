@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -9,14 +9,6 @@ export function HeroSection() {
   const leftWordsRef = useRef<HTMLDivElement>(null);
   const rightWordsRef = useRef<HTMLDivElement>(null);
   const centerBoxRef = useRef<HTMLDivElement>(null);
-  const [clipProgress, setClipProgress] = useState<number>(0);
-
-  // Dynamic corner CAD cut values calculated based on scroll progress (0 to 100)
-  const pad = Math.round(54 * (1 - clipProgress / 100));
-  const clipTL = `inset(0px ${pad}px ${pad}px 0px)`;
-  const clipTR = `inset(0px 0px ${pad}px ${pad}px)`;
-  const clipBR = `inset(${pad}px 0px 0px ${pad}px)`;
-  const clipBL = `inset(${pad}px ${pad}px 0px 0px)`;
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -24,7 +16,7 @@ export function HeroSection() {
     const ctx = gsap.context(() => {
       const tlLoad = gsap.timeline({ delay: 0.1 });
 
-      // 1. Center box entrance & particles resolve
+      // 1. Center box entrance
       tlLoad.fromTo(
         centerBoxRef.current,
         { scale: 0.88, opacity: 0 },
@@ -32,7 +24,7 @@ export function HeroSection() {
         0
       );
 
-      // 2. First hero line reveals (SHAPING)
+      // 2. Hero word reveals
       tlLoad.fromTo(
         '.reveal-hero-word',
         { y: '110%' },
@@ -45,7 +37,7 @@ export function HeroSection() {
         0.2
       );
 
-      // 3. 4-corner telemetry appears
+      // 3. Corner labels appear
       tlLoad.fromTo(
         '.corner-telemetry',
         { opacity: 0, y: 12 },
@@ -53,7 +45,7 @@ export function HeroSection() {
         0.5
       );
 
-      // Pinned Hero Scroll Exit Choreography (vanlent.dev 1:1)
+      // Pinned Hero Scroll Exit Choreography
       if (heroRef.current && leftWordsRef.current && rightWordsRef.current) {
         const tlScroll = gsap.timeline({
           scrollTrigger: {
@@ -64,54 +56,34 @@ export function HeroSection() {
             scrub: 0.5,
             anticipatePin: 1,
             invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              setClipProgress(Math.round(self.progress * 100));
-            },
           },
         });
 
-        // Left words separate outwards horizontally
+        // Left words separate outwards
         tlScroll.to(
           leftWordsRef.current,
-          {
-            x: '-25vw',
-            opacity: 0.2,
-            ease: 'none',
-          },
+          { x: '-25vw', opacity: 0.15, ease: 'none' },
           0
         );
 
-        // Right words separate outwards horizontally
+        // Right words separate outwards
         tlScroll.to(
           rightWordsRef.current,
-          {
-            x: '25vw',
-            opacity: 0.2,
-            ease: 'none',
-          },
+          { x: '25vw', opacity: 0.15, ease: 'none' },
           0
         );
 
-        // 4-corner telemetry fades and translates up
+        // Corner labels fade
         tlScroll.to(
           '.corner-telemetry',
-          {
-            opacity: 0.1,
-            y: -50,
-            stagger: 0.04,
-            ease: 'none',
-          },
+          { opacity: 0.05, y: -40, stagger: 0.04, ease: 'none' },
           0
         );
 
-        // Center box subtle scale/opacity shift
+        // Center box subtle recede
         tlScroll.to(
           centerBoxRef.current,
-          {
-            scale: 0.95,
-            opacity: 0.8,
-            ease: 'none',
-          },
+          { scale: 0.92, opacity: 0.6, ease: 'none' },
           0
         );
       }
@@ -129,76 +101,15 @@ export function HeroSection() {
         width: '100%',
         minHeight: '100svh',
         height: '100svh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateRows: 'auto 1fr auto',
         paddingTop: 'calc(var(--header-height) + 16px)',
         paddingBottom: '24px',
         overflow: 'hidden',
         backgroundColor: 'transparent',
       }}
     >
-      {/* Central Vertical Dashed Line Guide Ruler */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: '50%',
-          width: '1px',
-          background:
-            'repeating-linear-gradient(to bottom, var(--border-light) 0, var(--border-light) 4px, transparent 4px, transparent 8px)',
-          transform: 'translateX(-50%)',
-          clipPath: `inset(0% 0% ${100 - clipProgress}% 0%)`,
-          pointerEvents: 'none',
-          zIndex: 1,
-          transition: 'clip-path 0.05s linear',
-        }}
-      />
-
-      {/* Central Axis Crosshair */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '24px',
-          height: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          zIndex: 3,
-        }}
-      >
-        <span style={{ position: 'absolute', width: '1px', height: '100%', background: 'var(--border-medium)' }} />
-        <span style={{ position: 'absolute', height: '1px', width: '100%', background: 'var(--border-medium)' }} />
-      </div>
-
-      {/* Live Vertical Ruler CAD Telemetry Annotation (vanlent.dev 1:1) */}
-      <span
-        style={{
-          position: 'absolute',
-          left: 'calc(50% + 8px)',
-          top: '30%',
-          transform: 'translateY(-50%)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '9px',
-          color: 'var(--text-quaternary)',
-          writingMode: 'vertical-rl',
-          textOrientation: 'mixed',
-          letterSpacing: '0.08em',
-          pointerEvents: 'none',
-          zIndex: 3,
-        }}
-      >
-        clip-path: inset(0% 0% {100 - clipProgress}% 0%)
-      </span>
-
-      {/* TOP ROW TELEMETRY (01 Left & 02 Right) */}
+      {/* TOP ROW: Corner Labels */}
       <div className="content-constraint" style={{ width: '100%', zIndex: 10 }}>
         <div
           style={{
@@ -208,52 +119,46 @@ export function HeroSection() {
             width: '100%',
           }}
         >
-          {/* Top Left: 01. CREATIVE DEVELOPER */}
           <div className="corner-telemetry tech-label" style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
-            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>01.</span>
-            <span style={{ color: 'var(--text-secondary)' }}>CREATIVE DEVELOPER</span>
+            <span style={{ color: 'var(--text-tertiary)' }}>INDEPENDENT</span>
           </div>
 
-          {/* Top Right: 02. WARSAW BASED */}
           <div className="corner-telemetry tech-label" style={{ display: 'flex', gap: '8px', fontSize: '11px', textAlign: 'right' }}>
-            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>02.</span>
-            <span style={{ color: 'var(--text-secondary)' }}>WARSAW BASED</span>
+            <span style={{ color: 'var(--text-tertiary)' }}>CREATIVE DEVELOPER</span>
           </div>
         </div>
       </div>
 
-      {/* CENTER ROW: SHAPING CONCEPTS / 3D SPHERE TARGET / BUILDING EXPERIENCES */}
+      {/* CENTER ROW: Words + Bubble — CSS Grid */}
       <div
         className="content-constraint"
         style={{
           width: '100%',
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          margin: 'auto 0',
+          gap: '0',
           position: 'relative',
           zIndex: 6,
         }}
       >
-        {/* LEFT WORDS: SHAPING CONCEPTS (Display Serif Editorial Hierarchy) */}
+        {/* LEFT WORDS */}
         <div
           ref={leftWordsRef}
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '0px',
             userSelect: 'none',
-            flex: 1,
             zIndex: 6,
             willChange: 'transform',
           }}
         >
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word font-serif"
+              className="reveal-hero-word font-display"
               style={{
                 fontSize: 'clamp(48px, 6.5vw, 130px)',
-                fontWeight: 400,
+                fontWeight: 100,
                 letterSpacing: '-0.03em',
                 lineHeight: 0.9,
                 textTransform: 'uppercase',
@@ -266,10 +171,10 @@ export function HeroSection() {
 
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word font-serif"
+              className="reveal-hero-word font-display"
               style={{
                 fontSize: 'clamp(48px, 6.5vw, 130px)',
-                fontWeight: 400,
+                fontWeight: 100,
                 letterSpacing: '-0.03em',
                 lineHeight: 0.9,
                 textTransform: 'uppercase',
@@ -281,14 +186,13 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* CENTER BOX: 3D PARTICLE BUBBLE DOCKING TARGET (vanlent.dev 1:1) */}
+        {/* CENTER: Bubble Docking Target */}
         <div
           ref={centerBoxRef}
           style={{
             position: 'relative',
-            width: 'clamp(260px, 28vw, 380px)',
-            height: 'clamp(260px, 28vw, 380px)',
-            margin: '0 20px',
+            width: 'clamp(240px, 26vw, 360px)',
+            height: 'clamp(240px, 26vw, 360px)',
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
@@ -296,89 +200,13 @@ export function HeroSection() {
             zIndex: 7,
           }}
         >
-          {/* CAD Corner Crosshairs */}
-          <div
-            className="corner-box"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'transparent',
-              borderColor: 'var(--border-subtle)',
-              pointerEvents: 'none',
-            }}
-          >
-            <span className="corner-crosshair corner-crosshair-tl" style={{ borderColor: 'var(--border-medium)' }} />
-            <span className="corner-crosshair corner-crosshair-tr" style={{ borderColor: 'var(--border-medium)' }} />
-            <span className="corner-crosshair corner-crosshair-bl" style={{ borderColor: 'var(--border-medium)' }} />
-            <span className="corner-crosshair corner-crosshair-br" style={{ borderColor: 'var(--border-medium)' }} />
-          </div>
+          {/* Subtle corner brackets */}
+          <span className="corner-crosshair corner-crosshair-tl" style={{ borderColor: 'var(--border-light)' }} />
+          <span className="corner-crosshair corner-crosshair-tr" style={{ borderColor: 'var(--border-light)' }} />
+          <span className="corner-crosshair corner-crosshair-bl" style={{ borderColor: 'var(--border-light)' }} />
+          <span className="corner-crosshair corner-crosshair-br" style={{ borderColor: 'var(--border-light)' }} />
 
-          {/* Technical Dynamic Coordinate Annotations (vanlent.dev 1:1 AnimationPrint) */}
-          <span
-            style={{
-              position: 'absolute',
-              top: '-18px',
-              left: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
-              color: 'var(--text-quaternary)',
-              letterSpacing: '0.04em',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            clip-path: {clipTL}
-          </span>
-
-          <span
-            style={{
-              position: 'absolute',
-              top: '-18px',
-              right: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
-              color: 'var(--text-quaternary)',
-              letterSpacing: '0.04em',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            clip-path: {clipTR}
-          </span>
-
-          <span
-            style={{
-              position: 'absolute',
-              bottom: '-18px',
-              right: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
-              color: 'var(--text-quaternary)',
-              letterSpacing: '0.04em',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            clip-path: {clipBR}
-          </span>
-
-          <span
-            style={{
-              position: 'absolute',
-              bottom: '-18px',
-              left: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
-              color: 'var(--text-quaternary)',
-              letterSpacing: '0.04em',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            clip-path: {clipBL}
-          </span>
-
-          {/* DOCKING TARGET FOR GLOBAL THREE.JS PARTICLE SPHERE */}
+          {/* Docking target for global mesh */}
           <div
             data-bubble-target="true"
             data-section="hero"
@@ -391,16 +219,14 @@ export function HeroSection() {
           />
         </div>
 
-        {/* RIGHT WORDS: BUILDING EXPERIENCES (Display Serif Editorial Hierarchy) */}
+        {/* RIGHT WORDS */}
         <div
           ref={rightWordsRef}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-end',
-            gap: '0px',
             userSelect: 'none',
-            flex: 1,
             textAlign: 'right',
             zIndex: 6,
             willChange: 'transform',
@@ -408,10 +234,10 @@ export function HeroSection() {
         >
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word font-serif"
+              className="reveal-hero-word font-display"
               style={{
                 fontSize: 'clamp(48px, 6.5vw, 130px)',
-                fontWeight: 400,
+                fontWeight: 100,
                 letterSpacing: '-0.03em',
                 lineHeight: 0.9,
                 textTransform: 'uppercase',
@@ -424,10 +250,10 @@ export function HeroSection() {
 
           <div className="overflow-mask">
             <h2
-              className="reveal-hero-word font-serif"
+              className="reveal-hero-word font-display"
               style={{
                 fontSize: 'clamp(48px, 6.5vw, 130px)',
-                fontWeight: 400,
+                fontWeight: 100,
                 letterSpacing: '-0.03em',
                 lineHeight: 0.9,
                 textTransform: 'uppercase',
@@ -440,7 +266,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* BOTTOM ROW TELEMETRY (03 Left & 04 Right) */}
+      {/* BOTTOM ROW: Contact + Availability */}
       <div className="content-constraint" style={{ width: '100%', zIndex: 10 }}>
         <div
           style={{
@@ -450,30 +276,20 @@ export function HeroSection() {
             width: '100%',
           }}
         >
-          {/* Bottom Left: 03. T: +48 ... M: contact@miloszwiater.dev */}
           <div className="corner-telemetry tech-label" style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>03.</span>
-              <a href="tel:+48500000000" style={{ color: 'var(--text-secondary)' }} data-cursor="hover">
-                T: +48 500 000 000
-              </a>
-            </div>
-            <div style={{ paddingLeft: '24px' }}>
-              <a href="mailto:contact@miloszwiater.dev" style={{ color: 'var(--text-secondary)' }} data-cursor="hover">
-                M: contact@miloszwiater.dev
-              </a>
-            </div>
+            <a href="mailto:contact@miloszwiater.dev" style={{ color: 'var(--text-secondary)' }} data-cursor="hover">
+              contact@miloszwiater.dev
+            </a>
           </div>
 
-          {/* Bottom Right: 04. OPEN FOR PROJECTS */}
           <div className="corner-telemetry tech-label" style={{ fontSize: '11px', textAlign: 'right' }}>
             <a
               href="#contact"
               style={{ display: 'inline-flex', gap: '8px', color: 'var(--text-secondary)' }}
               data-cursor="hover"
             >
-              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>04.</span>
-              <span>OPEN FOR PROJECTS</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>WARSAW, PL</span>
+              <span style={{ color: 'var(--text-secondary)' }}>— AVAILABLE FOR PROJECTS</span>
             </a>
           </div>
         </div>
@@ -481,13 +297,12 @@ export function HeroSection() {
 
       <style jsx>{`
         @media (max-width: 900px) {
-          #hero-section .content-constraint:nth-child(4) {
-            flex-direction: column;
-            gap: 24px;
-            text-align: center;
+          #hero-section > div:nth-child(2) {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+            text-align: center !important;
           }
-          #hero-section .content-constraint:nth-child(4) > div:first-child,
-          #hero-section .content-constraint:nth-child(4) > div:last-child {
+          #hero-section > div:nth-child(2) > div {
             align-items: center !important;
             text-align: center !important;
           }
