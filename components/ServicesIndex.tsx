@@ -11,13 +11,16 @@ const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
 
 export function ServicesIndex() {
-  const progress = useScrollProgress('services');
+  const scroll = useScrollProgress();
+  const progress = scroll.progress.services;
   const { setActiveServiceIndex } = useBubble();
   const { dictionary } = useLanguage();
   const layoutRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(0);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollResumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastScrollY = useRef(scroll.scrollY);
   const hasEntered = useRef(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [previousIndex, setPreviousIndex] = useState<number | null>(null);
@@ -25,6 +28,7 @@ export function ServicesIndex() {
   const [transitioning, setTransitioning] = useState(false);
   const [inViewport, setInViewport] = useState(false);
   const [interactionPaused, setInteractionPaused] = useState(false);
+  const [scrollPaused, setScrollPaused] = useState(false);
   const start = 1 / 6;
   const end = 0.78;
   const serviceProgress = clamp01((progress - start) / (end - start));
@@ -49,11 +53,11 @@ export function ServicesIndex() {
     transitionTimer.current = setTimeout(() => {
       setTransitioning(false);
       setPreviousIndex(null);
-    }, 820);
+    }, 980);
     if (manual) {
       setInteractionPaused(true);
       if (resumeTimer.current) clearTimeout(resumeTimer.current);
-      resumeTimer.current = setTimeout(() => setInteractionPaused(false), 1500);
+      resumeTimer.current = setTimeout(() => setInteractionPaused(false), 1800);
     }
   }, []);
 
@@ -77,14 +81,26 @@ export function ServicesIndex() {
   useEffect(() => setActiveServiceIndex(activeIndex), [activeIndex, setActiveServiceIndex]);
 
   useEffect(() => {
-    if (!sceneActive || interactionPaused) return;
+    const moved = Math.abs(scroll.scrollY - lastScrollY.current) > .5;
+    lastScrollY.current = scroll.scrollY;
+    if (!sceneActive || !moved) return;
+
+    setScrollPaused(true);
+    changeService(scrollIndex, false);
+    if (scrollResumeTimer.current) clearTimeout(scrollResumeTimer.current);
+    scrollResumeTimer.current = setTimeout(() => setScrollPaused(false), 1750);
+  }, [changeService, sceneActive, scroll.scrollY, scrollIndex]);
+
+  useEffect(() => {
+    if (!sceneActive || interactionPaused || scrollPaused) return;
     const timer = window.setTimeout(() => changeService(activeIndex + 1), 4800);
     return () => window.clearTimeout(timer);
-  }, [activeIndex, changeService, interactionPaused, sceneActive]);
+  }, [activeIndex, changeService, interactionPaused, sceneActive, scrollPaused]);
 
   useEffect(() => () => {
     if (transitionTimer.current) clearTimeout(transitionTimer.current);
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    if (scrollResumeTimer.current) clearTimeout(scrollResumeTimer.current);
   }, []);
 
   const pauseInteraction = () => {
@@ -93,7 +109,7 @@ export function ServicesIndex() {
   };
   const resumeInteraction = () => {
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    resumeTimer.current = setTimeout(() => setInteractionPaused(false), 1100);
+    resumeTimer.current = setTimeout(() => setInteractionPaused(false), 1800);
   };
 
   return (
@@ -116,7 +132,7 @@ export function ServicesIndex() {
 
         <section className="services-panel" style={{ opacity: contentReveal }} aria-live="polite" onPointerEnter={pauseInteraction} onPointerLeave={resumeInteraction}>
           <div className="services-panel-top">
-            <span className="services-number">0{activeIndex + 1} / 0{SERVICES.length}</span>
+            <span className="services-number" key={`number-${activeIndex}`}>0{activeIndex + 1} / 0{SERVICES.length}</span>
             <div className="services-nav" aria-label={dictionary.services.navigation}>
               <button type="button" onClick={() => changeService(activeIndex - 1, true)} aria-label={dictionary.services.previous}>←</button>
               <button type="button" onClick={() => changeService(activeIndex + 1, true)} aria-label={dictionary.services.next}>→</button>
@@ -134,7 +150,7 @@ export function ServicesIndex() {
               <p>{service.description}</p>
             </div>
           </div>
-          <div className="services-line"><i key={`line-${activeIndex}`} style={{ animationPlayState: interactionPaused ? 'paused' : 'running' }} /></div>
+          <div className="services-line"><i key={`line-${activeIndex}`} style={{ animationPlayState: interactionPaused || scrollPaused ? 'paused' : 'running' }} /></div>
         </section>
 
         <nav className="services-index" aria-label={dictionary.services.navigation} style={{ opacity: contentReveal }} onPointerEnter={pauseInteraction} onPointerLeave={resumeInteraction}>
@@ -170,7 +186,7 @@ export function ServicesIndex() {
         .services-cta { grid-column: -3 / -1; grid-row: 3 / 4; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); font-size: 14px; color: var(--text-secondary); }
         .services-panel { grid-column: 1 / 7; grid-row: 4 / 10; padding: 24px; border: 1px solid var(--border-primary); overflow: hidden; display: flex; flex-direction: column; transition: opacity .16s linear; }
         .services-panel-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 3; }
-        .services-number { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
+        .services-number { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); animation: serviceNumber .62s var(--ease-out-expo) both; }
         .services-nav { display: flex; gap: 5px; }
         .services-nav button { width: 34px; height: 30px; border: 1px solid var(--border-primary); color: var(--text-secondary); transition: color .2s ease, background .2s ease; }
         .services-nav button:hover { color: var(--bg-canvas); background: var(--text-primary); }
@@ -178,9 +194,9 @@ export function ServicesIndex() {
         .services-copy { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
         .services-panel h3 { display: flex; flex-direction: column; align-items: flex-start; font: 200 clamp(34px,3.65vw,56px)/1.02 var(--font-display); letter-spacing: -.05em; color: var(--text-primary); }
         .services-panel h3 strong { font-weight: 200; color: var(--bg-canvas); background: var(--text-primary); padding: 0 9px 4px; }
-        .services-panel p { max-width: 520px; min-height: 76px; margin-top: 24px; font: 300 14px/1.5 var(--font-sans); color: var(--text-secondary); animation: serviceCopy .42s .05s var(--ease-out-expo) both; }
-        .services-copy--incoming { animation: serviceIn .82s var(--ease-out-expo) both; }
-        .services-copy--outgoing { animation: serviceOut .52s var(--ease-in-out-cubic) both; }
+        .services-panel p { max-width: 520px; min-height: 76px; margin-top: 24px; font: 300 14px/1.5 var(--font-sans); color: var(--text-secondary); animation: serviceCopy .56s .14s var(--ease-out-expo) both; }
+        .services-copy--incoming { animation: serviceIn .94s .06s var(--ease-out-expo) both; }
+        .services-copy--outgoing { animation: serviceOut .64s var(--ease-in-out-cubic) both; }
         .direction-1 .services-copy--incoming { --service-from: 42px; }
         .direction-1 .services-copy--outgoing { --service-to: -28px; }
         .direction--1 .services-copy--incoming { --service-from: -42px; }
@@ -201,6 +217,7 @@ export function ServicesIndex() {
         @keyframes serviceIn { from { clip-path: inset(0 0 100% 0); transform: translateX(var(--service-from,42px)) scale(.985); } to { clip-path: inset(0); transform: none; } }
         @keyframes serviceOut { to { clip-path: inset(100% 0 0 0); transform: translateX(var(--service-to,-28px)) scale(.985); opacity: 0; } }
         @keyframes serviceCopy { from { clip-path: inset(0 0 100% 0); transform: translateY(10px); } to { clip-path: inset(0); transform: none; } }
+        @keyframes serviceNumber { from { clip-path: inset(0 0 100% 0); transform: translateY(8px); } to { clip-path: inset(0); transform: none; } }
         @keyframes serviceTimer { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         @keyframes scopeIn { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
         @media (min-width: 768px) and (max-height: 800px) {
@@ -219,7 +236,7 @@ export function ServicesIndex() {
           .services-scope { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .services-copy, .services-panel p, .services-line i, .services-scope { animation: none; }
+          .services-copy, .services-number, .services-panel p, .services-line i, .services-scope { animation: none; }
         }
       `}</style>
     </PinnedSection>

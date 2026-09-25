@@ -39,7 +39,7 @@ const TRAVEL_PATH: TravelKeyframe[] = [
   { at: 1, anchor: 0, row: 6, scale: .7, shape: .28, energy: .4, breath: .5, colorMix: 0, rim: 0, shellTint: 0, presence: .92, transition: .22, rotationX: .14, rotationY: 13.15, phase: 'contact / settle' },
 ];
 
-export function sampleOrbTravel(progress: number): OrbTravelState {
+export function sampleOrbTravel(progress: number, target?: OrbTravelState): OrbTravelState {
   const value = clamp01(progress);
   let from = TRAVEL_PATH[0];
   let to = TRAVEL_PATH[TRAVEL_PATH.length - 1];
@@ -51,14 +51,20 @@ export function sampleOrbTravel(progress: number): OrbTravelState {
     }
   }
   const local = smooth((value - from.at) / Math.max(.0001, to.at - from.at));
-  return {
-    anchor: lerp(from.anchor, to.anchor, local), row: lerp(from.row, to.row, local),
-    scale: lerp(from.scale, to.scale, local), shape: lerp(from.shape, to.shape, local),
-    energy: lerp(from.energy, to.energy, local), breath: lerp(from.breath, to.breath, local),
-    colorMix: lerp(from.colorMix, to.colorMix, local), rim: lerp(from.rim, to.rim, local),
-    shellTint: lerp(from.shellTint, to.shellTint, local), presence: lerp(from.presence, to.presence, local),
-    transition: lerp(from.transition, to.transition, local), rotationX: lerp(from.rotationX, to.rotationX, local),
-    rotationY: lerp(from.rotationY, to.rotationY, local), phase: local < .5 ? from.phase : to.phase,
-  };
+  const state = target ?? { ...from };
+  state.anchor = lerp(from.anchor, to.anchor, local);
+  state.row = lerp(from.row, to.row, local);
+  state.scale = lerp(from.scale, to.scale, local);
+  state.shape = lerp(from.shape, to.shape, local);
+  state.energy = lerp(from.energy, to.energy, local);
+  state.breath = lerp(from.breath, to.breath, local);
+  state.colorMix = lerp(from.colorMix, to.colorMix, local);
+  state.rim = lerp(from.rim, to.rim, local);
+  state.shellTint = lerp(from.shellTint, to.shellTint, local);
+  state.presence = lerp(from.presence, to.presence, local);
+  state.transition = lerp(from.transition, to.transition, local);
+  state.rotationX = lerp(from.rotationX, to.rotationX, local);
+  state.rotationY = lerp(from.rotationY, to.rotationY, local);
+  state.phase = local < .5 ? from.phase : to.phase;
+  return state;
 }
-

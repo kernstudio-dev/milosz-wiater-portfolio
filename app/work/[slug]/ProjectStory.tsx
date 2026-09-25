@@ -34,6 +34,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
     if (!page) return;
 
     const revealItems = Array.from(page.querySelectorAll<HTMLElement>('[data-reveal]'));
+    const parallaxItems = Array.from(page.querySelectorAll<HTMLElement>('[data-parallax]'));
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) entry.target.setAttribute('data-visible', 'true');
@@ -46,10 +47,17 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       frame = 0;
       const height = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       page.style.setProperty('--page-progress', String(clamp(window.scrollY / height, 0, 1)));
-      page.querySelectorAll<HTMLElement>('[data-parallax]').forEach((element) => {
+      revealItems.forEach((element) => {
+        if (element.getAttribute('data-visible') === 'true') return;
+        const bounds = element.getBoundingClientRect();
+        if (bounds.top < window.innerHeight * .93 && bounds.bottom > window.innerHeight * .07) {
+          element.setAttribute('data-visible', 'true');
+        }
+      });
+      parallaxItems.forEach((element) => {
         const bounds = element.getBoundingClientRect();
         const distance = window.innerHeight * .5 - (bounds.top + bounds.height * .5);
-        element.style.setProperty('--media-shift', `${clamp(distance * .055, -46, 46).toFixed(2)}px`);
+        element.style.setProperty('--media-shift', `${clamp(distance * .038, -32, 32).toFixed(2)}px`);
       });
     };
     const onScroll = () => {
@@ -162,7 +170,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
           <figcaption>{dictionary.caseStudy.finalExperience} / {project.year}</figcaption>
         </figure>
 
-        <Link href={`/work/${next.id}`} className={styles.next} data-cursor="view" data-cursor-text={dictionary.work.view} onClick={(event) => openDestination(event, `/work/${next.id}`, dictionary.caseStudy.nextProject)}>
+        <Link href={`/work/${next.id}`} className={styles.next} data-reveal data-cursor="view" data-cursor-text={dictionary.work.view} onClick={(event) => openDestination(event, `/work/${next.id}`, dictionary.caseStudy.nextProject)}>
           <img src={next.media.src} alt={nextCopy.mediaAlt} />
           <span>{dictionary.caseStudy.nextProject}</span>
           <strong>{next.title}</strong>

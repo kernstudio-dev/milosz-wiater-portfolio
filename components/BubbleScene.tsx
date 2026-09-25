@@ -35,6 +35,12 @@ type IdlePersonality = {
   stretch: readonly [number, number, number];
 };
 
+type IdleSample = Omit<IdlePersonality, 'at' | 'stretch'> & {
+  stretchX: number;
+  stretchY: number;
+  stretchZ: number;
+};
+
 const IDLE_PERSONALITY_PATH: IdlePersonality[] = [
   { at: 0, low: .5, mid: .18, detail: .036, lowFreq: 1.05, midFreq: 4.15, detailFreq: 8.8, density: .84, pointScale: 1, speed: .92, stretch: [1.04, .97, 1] },
   { at: .1, low: .47, mid: .17, detail: .034, lowFreq: 1.08, midFreq: 4.3, detailFreq: 9, density: .82, pointScale: 1, speed: .9, stretch: [1.03, .98, 1] },
@@ -53,7 +59,7 @@ const smooth = (t: number) => {
   return p * p * (3 - 2 * p);
 };
 
-function sampleIdlePersonality(progress: number) {
+function sampleIdlePersonality(progress: number, target: IdleSample) {
   const value = clamp01(progress);
   let from = IDLE_PERSONALITY_PATH[0];
   let to = IDLE_PERSONALITY_PATH[IDLE_PERSONALITY_PATH.length - 1];
@@ -65,12 +71,19 @@ function sampleIdlePersonality(progress: number) {
     }
   }
   const t = smooth((value - from.at) / Math.max(.0001, to.at - from.at));
-  return {
-    low: lerp(from.low, to.low, t), mid: lerp(from.mid, to.mid, t), detail: lerp(from.detail, to.detail, t),
-    lowFreq: lerp(from.lowFreq, to.lowFreq, t), midFreq: lerp(from.midFreq, to.midFreq, t), detailFreq: lerp(from.detailFreq, to.detailFreq, t),
-    density: lerp(from.density, to.density, t), pointScale: lerp(from.pointScale, to.pointScale, t), speed: lerp(from.speed, to.speed, t),
-    stretch: from.stretch.map((item, index) => lerp(item, to.stretch[index], t)) as [number, number, number],
-  };
+  target.low = lerp(from.low, to.low, t);
+  target.mid = lerp(from.mid, to.mid, t);
+  target.detail = lerp(from.detail, to.detail, t);
+  target.lowFreq = lerp(from.lowFreq, to.lowFreq, t);
+  target.midFreq = lerp(from.midFreq, to.midFreq, t);
+  target.detailFreq = lerp(from.detailFreq, to.detailFreq, t);
+  target.density = lerp(from.density, to.density, t);
+  target.pointScale = lerp(from.pointScale, to.pointScale, t);
+  target.speed = lerp(from.speed, to.speed, t);
+  target.stretchX = lerp(from.stretch[0], to.stretch[0], t);
+  target.stretchY = lerp(from.stretch[1], to.stretch[1], t);
+  target.stretchZ = lerp(from.stretch[2], to.stretch[2], t);
+  return target;
 }
 
 function alignCamera(camera: THREE.PerspectiveCamera, width: number, height: number) {
@@ -227,6 +240,12 @@ export function BubbleScene() {
     let serviceMorph = 0;
     let serviceTarget = 0;
     let previousServiceIndex = 0;
+    const travelState = sampleOrbTravel(0);
+    const idleState: IdleSample = {
+      low: .5, mid: .18, detail: .036, lowFreq: 1.05, midFreq: 4.15, detailFreq: 8.8,
+      density: .84, pointScale: 1, speed: .92, stretchX: 1.04, stretchY: .97, stretchZ: 1,
+    };
+    const rotationState = { x: 0, y: 0, z: 0, velocityX: .012, velocityY: .038, velocityZ: 0 };
 
     const onPointerMove = (event: PointerEvent) => {
       pointerTarget.x = event.clientX;
@@ -260,13 +279,13 @@ export function BubbleScene() {
       const rightX = width < 768 ? width / 2 : xOffset + bs * (sectionCols - 3);
       const centerY = height < 700 ? height * 0.5 : bs * 6;
       const baseScale = productionScale(bs, height);
-      const travel = sampleOrbTravel(globalProgress);
+      const travel = sampleOrbTravel(globalProgress, travelState);
       const x = travel.anchor < 0
         ? lerp(centerX, workX, -travel.anchor)
         : lerp(centerX, rightX, travel.anchor);
       const y = height < 700 ? centerY : bs * travel.row;
       const scale = baseScale * travel.scale;
-      const idle = sampleIdlePersonality(globalProgress);
+      const idle = sampleIdlePersonality(globalProgress, idleState);
       if (activeServiceIndex !== previousServiceIndex) {
         let delta = activeServiceIndex - previousServiceIndex;
         if (delta > SERVICE_PERSONALITIES.length / 2) delta -= SERVICE_PERSONALITIES.length;
@@ -297,7 +316,6 @@ export function BubbleScene() {
       const serviceDetailFreq = lerp(serviceFrom.detailFreq, serviceTo.detailFreq, serviceLocal);
       const serviceDensity = lerp(serviceFrom.density, serviceTo.density, serviceLocal);
       const servicePointScale = lerp(serviceFrom.pointScale, serviceTo.pointScale, serviceLocal);
-      const serviceStretch = serviceFrom.stretch.map((item, index) => lerp(item, serviceTo.stretch[index], serviceLocal)) as [number, number, number];
       serviceColor.copy(servicePalette[serviceFromIndex]).lerp(servicePalette[serviceToIndex], serviceLocal);
       const idleSpeed = lerp(idle.speed, serviceSpeed, serviceWeight);
       // Time advances independently from scroll. Macro travel below remains a
@@ -334,9 +352,9 @@ export function BubbleScene() {
       uniforms.uDetailFrequency.value = lerp(idle.detailFreq, serviceDetailFreq, serviceWeight);
       uniforms.uDensityMotion.value = lerp(idle.density, serviceDensity, serviceWeight);
       uniforms.uStretch.value.set(
-        lerp(idle.stretch[0], serviceStretch[0], serviceWeight),
-        lerp(idle.stretch[1], serviceStretch[1], serviceWeight),
-        lerp(idle.stretch[2], serviceStretch[2], serviceWeight),
+        lerp(idle.stretchX, lerp(serviceFrom.stretch[0], serviceTo.stretch[0], serviceLocal), serviceWeight),
+        lerp(idle.stretchY, lerp(serviceFrom.stretch[1], serviceTo.stretch[1], serviceLocal), serviceWeight),
+        lerp(idle.stretchZ, lerp(serviceFrom.stretch[2], serviceTo.stretch[2], serviceLocal), serviceWeight),
       );
       uniforms.uColorMix.value = travel.colorMix;
       uniforms.uRim.value = travel.rim;
@@ -357,10 +375,20 @@ export function BubbleScene() {
       const sectionActivity = lerp(.88, 1.16, serviceWeight);
       const ambientBreathing = 1 + (Math.sin(time * .31) * .009 + Math.sin(time * .137 + 1.9) * .005) * sectionActivity;
       ambientGroup.scale.setScalar(ambientBreathing);
+      const rotationEase = 1 - Math.exp(-dt * .42);
+      const targetVelocityX = .008 + Math.sin(time * .043 + 1.1) * .009 + Math.sin(time * .017) * .004;
+      const targetVelocityY = .034 + Math.sin(time * .031 + .4) * .018 + Math.sin(time * .013 + 2.5) * .007;
+      const targetVelocityZ = Math.sin(time * .027 + 2.1) * .008 + Math.sin(time * .011) * .003;
+      rotationState.velocityX = lerp(rotationState.velocityX, targetVelocityX, rotationEase);
+      rotationState.velocityY = lerp(rotationState.velocityY, targetVelocityY * lerp(1, serviceSpeed, serviceWeight), rotationEase);
+      rotationState.velocityZ = lerp(rotationState.velocityZ, targetVelocityZ, rotationEase);
+      rotationState.x += rotationState.velocityX * dt;
+      rotationState.y += rotationState.velocityY * dt;
+      rotationState.z += rotationState.velocityZ * dt;
       ambientGroup.rotation.set(
-        Math.sin(time * .11) * .047 + Math.sin(time * .037 + 2.2) * .022 + time * .016 + serviceAxisX * serviceWeight * .12 + pointerState.rotationX,
-        time * (.052 * lerp(1, serviceSpeed, serviceWeight)) + Math.sin(time * .073 + .7) * .052 + pointerState.rotationY,
-        time * .006 + Math.sin(time * .057 + 2.1) * .026 + Math.sin(time * .023) * .012 + serviceAxisZ * serviceWeight * .1,
+        rotationState.x + Math.sin(time * .11) * .04 + serviceAxisX * serviceWeight * .12 + pointerState.rotationX,
+        rotationState.y + Math.sin(time * .073 + .7) * .046 + pointerState.rotationY,
+        rotationState.z + Math.sin(time * .057 + 2.1) * .022 + serviceAxisZ * serviceWeight * .1,
       );
 
       const depth = globalProgress < .08 || globalProgress > .94
