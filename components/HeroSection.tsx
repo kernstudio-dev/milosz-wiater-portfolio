@@ -2,269 +2,130 @@
 
 import { useEffect, useState } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
-import { HeroConnector } from '@/components/HeroConnector';
-import { LetterReveal } from '@/components/LetterReveal';
 import { useScrollProgress } from '@/context/ScrollContext';
-import { scaleFontSize } from '@/lib/grid';
-import { useWindowSize } from '@/hooks/useWindowSize';
+import { useLanguage } from '@/context/LanguageContext';
 
-const WORDS_LEFT: { word: string; tone: 'tertiary' | 'quaternary' }[] = [
-  { word: 'SHAPING', tone: 'tertiary' },
-  { word: 'CONCEPTS', tone: 'quaternary' },
-];
-const WORDS_RIGHT: { word: string; tone: 'tertiary' | 'quaternary' }[] = [
-  { word: 'BUILDING', tone: 'tertiary' },
-  { word: 'EXPERIENCES', tone: 'quaternary' },
-];
-
-function scrollExit(progress: number, start: number): { y: number; opacity: number } {
-  if (progress <= start) return { y: 0, opacity: 1 };
-  const t = Math.min(1, (progress - start) / (1 - start));
-  // Spring-like ease-out approximation (stiffness 120, damping 20)
-  const eased = 1 - Math.pow(1 - t, 3);
-  return { y: -120 * eased, opacity: 1 - eased };
-}
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 export function HeroSection() {
-  const scrollCtx = useScrollProgress();
-  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.hero;
-  const [intro, setIntro] = useState({
-    words: [false, false, false, false],
-    labelTL: false,
-    labelTR: false,
-    labelBL: false,
-    labelBR: false,
-  });
-  const { metrics } = useWindowSize();
-  const wordSize = scaleFontSize(35.07, 3.46, metrics.blockSize);
-  const bs = metrics.blockSize;
-  const armLen = bs + (bs * 2 * Math.min(1, Math.max(0, (progress - 0.25) / 0.75)));
+  const progress = useScrollProgress('hero');
+  const { dictionary } = useLanguage();
+  const [entered, setEntered] = useState(false);
 
   useEffect(() => {
-    const wordTimes = [0, 80, 160, 240];
-    const labelTimes = [290, 410, 530, 650];
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    wordTimes.forEach((ms, i) => {
-      timers.push(
-        setTimeout(() => {
-          setIntro((prev) => {
-            const words = [...prev.words];
-            words[i] = true;
-            return { ...prev, words };
-          });
-        }, ms)
-      );
-    });
-
-    timers.push(setTimeout(() => setIntro((p) => ({ ...p, labelTL: true })), labelTimes[0]));
-    timers.push(setTimeout(() => setIntro((p) => ({ ...p, labelTR: true })), labelTimes[1]));
-    timers.push(setTimeout(() => setIntro((p) => ({ ...p, labelBL: true })), labelTimes[2]));
-    timers.push(setTimeout(() => setIntro((p) => ({ ...p, labelBR: true })), labelTimes[3]));
-
-    return () => timers.forEach(clearTimeout);
+    const timer = window.setTimeout(() => setEntered(true), 80);
+    return () => window.clearTimeout(timer);
   }, []);
 
-  const topExit = scrollExit(progress, 0.8);
-  const leftExit = scrollExit(progress, 0.85);
-  const rightExit = scrollExit(progress, 0.855);
-  const bottomExit = scrollExit(progress, 0.9);
-
-  const insetPx = Math.round(bs * (1 - Math.min(1, Math.max(0, (progress - 0.25) / 0.75))));
+  const exit = clamp01((progress - 0.78) / 0.22);
+  const frameInset = Math.round((1 - clamp01(progress / 0.75)) * 28);
 
   return (
     <PinnedSection id="hero">
-      <HeroConnector />
+      <div className={`hero-layout ${entered ? 'hero-layout--entered' : ''}`} style={{ opacity: 1 - exit }}>
+        <p className="hero-label hero-label--top-left"><span>01.</span> {dictionary.hero.role}</p>
+        <p className="hero-label hero-label--top-right"><span>02.</span> {dictionary.hero.availability}</p>
 
-      <div className="section-grid-inner hero-grid">
-        <div
-          className="hero-label hero-label--tl"
-          style={{ gridColumn: '2 / 5', gridRow: '3 / 4', transform: `translateY(${topExit.y}px)`, opacity: topExit.opacity }}
-        >
-          <LetterReveal
-            text="01."
-            active={intro.labelTL}
-            className="hero-label-muted"
-          />
-          <LetterReveal
-            text=" CREATIVE DEVELOPER"
-            active={intro.labelTL}
-            className="hero-label-strong"
-            delay={0.035}
-          />
+        <div className="hero-words hero-words--left">
+          <span>{dictionary.hero.shaping}</span>
+          <span>{dictionary.hero.concepts}</span>
+        </div>
+        <div className="hero-words hero-words--right">
+          <span>{dictionary.hero.building}</span>
+          <span>{dictionary.hero.experiences}</span>
         </div>
 
-        <div
-          className="hero-label hero-label--tr"
-          style={{ gridColumn: '17 / 20', gridRow: '3 / 4', transform: `translateY(${topExit.y}px)`, opacity: topExit.opacity }}
-        >
-          <LetterReveal text="02." active={intro.labelTR} className="hero-label-muted" />
-          <LetterReveal text=" AVAILABLE REMOTELY" active={intro.labelTR} className="hero-label-strong" delay={0.035} />
+        <div className="hero-orb-frame" aria-hidden="true">
+          <span className="hero-frame-note hero-frame-note--top">clip-path: inset(0px {frameInset}px {frameInset}px 0px)</span>
+          <span className="hero-frame-note hero-frame-note--left">clip-path: inset({frameInset}px {frameInset}px 0px 0px)</span>
+          <span className="hero-frame-note hero-frame-note--right">clip-path: inset(0px 0px {frameInset}px {frameInset}px)</span>
+          <span className="hero-frame-note hero-frame-note--bottom">clip-path: inset({frameInset}px 0px 0px {frameInset}px)</span>
+          <i className="frame-corner frame-corner--tl" />
+          <i className="frame-corner frame-corner--tr" />
+          <i className="frame-corner frame-corner--bl" />
+          <i className="frame-corner frame-corner--br" />
         </div>
 
-        <div
-          className="hero-words hero-words--left"
-          style={{ gridColumn: '3 / 7', gridRow: '5 / 7', transform: `translateY(${leftExit.y}px)`, opacity: leftExit.opacity }}
-        >
-          {WORDS_LEFT.map(({ word, tone }, i) => (
-            <div key={word} className="overflow-mask">
-              <span
-                className={`hero-word hero-word--${tone} ${intro.words[i] ? 'hero-word--in' : ''}`}
-                style={{ fontSize: wordSize, transitionDelay: `${i * 80}ms` }}
-              >
-                {word}
-              </span>
-            </div>
-          ))}
+        <div className="hero-label hero-label--bottom-left">
+          <span>03.</span>
+          <a href="mailto:contact@kern.dev">M: CONTACT@KERN.DEV</a>
         </div>
-
-        <div
-          className="hero-words hero-words--right"
-          style={{ gridColumn: '15 / 19', gridRow: '5 / 7', transform: `translateY(${rightExit.y}px)`, opacity: rightExit.opacity }}
-        >
-          {WORDS_RIGHT.map(({ word, tone }, i) => (
-            <div key={word} className="overflow-mask">
-              <span
-                className={`hero-word hero-word--${tone} ${intro.words[i + 2] ? 'hero-word--in' : ''}`}
-                style={{ fontSize: wordSize, transitionDelay: `${160 + i * 80}ms` }}
-              >
-                {word}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="hero-frame" style={{ gridColumn: '8 / 14', gridRow: '3 / 9', pointerEvents: 'none' }}>
-          <div className="hero-frame-brackets" style={{ '--arm': `${armLen}px` } as React.CSSProperties}>
-            <span className="hero-bracket hero-bracket--tl" />
-            <span className="hero-bracket hero-bracket--tr" />
-            <span className="hero-bracket hero-bracket--bl" />
-            <span className="hero-bracket hero-bracket--br" />
-          </div>
-          {progress >= 0.25 && (
-            <>
-              <span className="hero-print hero-print--tl font-mono">{`clip-path: inset(0px ${insetPx}px ${insetPx}px 0px)`}</span>
-              <span className="hero-print hero-print--tr font-mono">{`clip-path: inset(0px 0px ${insetPx}px ${insetPx}px)`}</span>
-              <span className="hero-print hero-print--bl font-mono">{`clip-path: inset(${insetPx}px 0px 0px ${insetPx}px)`}</span>
-              <span className="hero-print hero-print--br font-mono">{`clip-path: inset(${insetPx}px ${insetPx}px 0px 0px)`}</span>
-            </>
-          )}
-        </div>
-
-        <div
-          className="hero-label hero-label--bl"
-          style={{ gridColumn: '2 / 5', gridRow: '8 / 9', transform: `translateY(${bottomExit.y}px)`, opacity: bottomExit.opacity }}
-        >
-          <LetterReveal text="03." active={intro.labelBL} className="hero-label-muted" />
-          <div className="hero-contact-links">
-            <a href="mailto:contact@kern.dev" className="hero-link">M: contact@kern.dev</a>
-          </div>
-        </div>
-
-        <div
-          className="hero-label hero-label--br"
-          style={{ gridColumn: '17 / 20', gridRow: '8 / 9', transform: `translateY(${bottomExit.y}px)`, opacity: bottomExit.opacity }}
-        >
-          <span className="hero-label-muted"><LetterReveal text="04." active={intro.labelBR} /></span>
-          <a href="#footer" className="hero-link">
-            <LetterReveal text=" OPEN FOR PROJECTS" active={intro.labelBR} className="hero-label-strong" delay={0.035} />
-          </a>
-        </div>
+        <a href="#footer" className="hero-label hero-label--bottom-right"><span>04.</span> {dictionary.hero.open}</a>
       </div>
 
       <style jsx>{`
-        .hero-grid {
-          padding-top: calc(var(--grid-block-size) * 2);
-          padding-bottom: calc(var(--grid-block-size) * 2);
+        .hero-layout {
+          position: relative;
+          height: 100%;
+          display: grid;
+          grid-template-columns: repeat(var(--grid-cols), var(--grid-block-size));
+          grid-template-rows: repeat(12, var(--grid-block-size));
+          transform: translateY(${-exit * 90}px);
+          transition: opacity 0.08s linear;
         }
         .hero-label {
-          font-family: var(--font-mono);
-          font-size: 16.53px;
-          letter-spacing: 0.08em;
+          align-self: start;
+          font: 500 12px/1 var(--font-sans);
           color: var(--text-secondary);
-          display: flex;
-          align-items: center;
-          gap: 0;
+          letter-spacing: -0.01em;
+          white-space: nowrap;
+          overflow: hidden;
         }
-        .hero-label--tr,
-        .hero-label--br {
-          justify-content: flex-end;
-          text-align: right;
-        }
-        .hero-label--bl {
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: flex-end;
-          gap: 2px;
-        }
-        .hero-label-muted :global(.letter-reveal) {
-          color: color-mix(in oklab, var(--text-secondary) 50%, transparent);
-          font-weight: 300;
-        }
-        .hero-label-strong :global(.letter-reveal) {
-          color: color-mix(in oklab, var(--text-primary) 50%, transparent);
-          font-weight: 500;
-        }
+        .hero-label span { color: var(--text-tertiary); font-weight: 400; }
+        .hero-label--top-left { grid-column: 2 / 6; grid-row: 4; }
+        .hero-label--top-right { grid-column: -4 / -1; grid-row: 4; }
+        .hero-label--bottom-left { grid-column: 2 / 6; grid-row: 9; display: flex; flex-direction: column; gap: 6px; }
+        .hero-label--bottom-right { grid-column: -4 / -1; grid-row: 9; }
         .hero-words {
+          align-self: center;
           display: flex;
           flex-direction: column;
-          justify-content: center;
-        }
-        .hero-words--right {
-          align-items: flex-end;
-          text-align: right;
-        }
-        .hero-word {
-          display: block;
-          font-family: var(--font-display);
-          font-weight: 200;
-          text-transform: uppercase;
-          line-height: 1.5;
-          transform: translateY(100%);
-          transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .hero-word--tertiary { color: var(--text-tertiary); }
-        .hero-word--quaternary { color: var(--text-quaternary); }
-        .hero-word--in { transform: translateY(0); }
-        .hero-link {
-          color: var(--text-secondary);
-          text-decoration: none;
-        }
-        .hero-link:hover { color: var(--text-primary); }
-        .hero-contact-links {
-          display: flex;
-          flex-direction: column;
-          font-size: 16.53px;
-        }
-        .hero-frame {
-          position: relative;
-        }
-        .hero-frame-brackets {
-          position: absolute;
-          inset: 0;
-        }
-        .hero-bracket {
-          position: absolute;
-          width: var(--arm, 90px);
-          height: var(--arm, 90px);
-          border-color: var(--border-primary);
-          border-style: solid;
-          transition: width 0.1s linear, height 0.1s linear;
-        }
-        .hero-bracket--tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
-        .hero-bracket--tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
-        .hero-bracket--bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
-        .hero-bracket--br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
-        .hero-print {
-          position: absolute;
-          font-size: 11px;
+          font: 200 clamp(28px, 2.75vw, 42px)/1.4 var(--font-display);
           color: var(--text-tertiary);
+          letter-spacing: -0.035em;
+          white-space: nowrap;
+        }
+        .hero-words--left { grid-column: 3 / 7; grid-row: 6 / 8; }
+        .hero-words--right { grid-column: -7 / -1; grid-row: 6 / 8; align-items: flex-end; }
+        .hero-words span {
+          display: block;
+          transform: translateY(115%);
+          opacity: 0;
+          transition: transform 0.9s cubic-bezier(.16,1,.3,1), opacity 0.5s ease;
+        }
+        .hero-words span:nth-child(2) { transition-delay: 0.08s; color: var(--text-quaternary); }
+        .hero-layout--entered .hero-words span { transform: translateY(0); opacity: 1; }
+        .hero-orb-frame {
+          position: absolute;
+          left: 50%;
+          top: calc(var(--grid-block-size) * 3);
+          width: calc(var(--grid-block-size) * 6);
+          height: calc(var(--grid-block-size) * 6);
+          transform: translateX(-50%);
           pointer-events: none;
         }
-        .hero-print--tl { top: 4px; left: 4px; }
-        .hero-print--tr { top: 4px; right: 4px; text-align: right; }
-        .hero-print--bl { bottom: 4px; left: 4px; }
-        .hero-print--br { bottom: 4px; right: 4px; text-align: right; }
+        .frame-corner { position: absolute; width: 76px; height: 76px; }
+        .frame-corner--tl { left: 0; top: 0; border-left: 1px solid var(--border-primary); border-top: 1px solid var(--border-primary); }
+        .frame-corner--tr { right: 0; top: 0; border-right: 1px solid var(--border-primary); border-top: 1px solid var(--border-primary); }
+        .frame-corner--bl { left: 0; bottom: 0; border-left: 1px solid var(--border-primary); border-bottom: 1px solid var(--border-primary); }
+        .frame-corner--br { right: 0; bottom: 0; border-right: 1px solid var(--border-primary); border-bottom: 1px solid var(--border-primary); }
+        .hero-frame-note { position: absolute; color: var(--text-quaternary); font: 10px/1 var(--font-mono); }
+        .hero-frame-note--top { top: 6px; left: 8px; }
+        .hero-frame-note--left { left: 8px; top: 50%; transform: rotate(90deg) translateX(-50%); transform-origin: left top; }
+        .hero-frame-note--right { right: 8px; top: 50%; transform: rotate(90deg) translateX(-50%); transform-origin: right top; }
+        .hero-frame-note--bottom { bottom: 6px; right: 8px; }
+        @media (max-width: 767px) {
+          .hero-layout { display: block; padding: 120px 24px 48px; }
+          .hero-label--top-left, .hero-label--top-right { position: absolute; top: 100px; }
+          .hero-label--top-left { left: 24px; }
+          .hero-label--top-right { right: 24px; text-align: right; }
+          .hero-words { position: absolute; font-size: clamp(34px, 10vw, 56px); }
+          .hero-words--left { left: 24px; top: 26%; }
+          .hero-words--right { right: 24px; bottom: 24%; }
+          .hero-orb-frame { position: absolute; width: min(78vw, 420px); aspect-ratio: 1; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+          .hero-label--bottom-left { position: absolute; left: 24px; bottom: 40px; }
+          .hero-label--bottom-right { position: absolute; right: 24px; bottom: 40px; }
+        }
       `}</style>
     </PinnedSection>
   );

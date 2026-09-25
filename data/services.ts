@@ -14,7 +14,7 @@ export const SERVICES: Service[] = [
     name: 'FRONT-END ARCHITECTURE & CREATIVE DEV',
     category: 'CRAFT & ENGINEERING',
     description:
-      'Translating ambitious creative concepts into clean, resilient, high-speed code. Specializing in bespoke digital artifacts, interactive experiences, and fluid web animations that run at a locked 60 frames per second.',
+      'Translating ambitious creative concepts into clean, resilient code. Thoughtful interfaces, expressive interaction and fluid motion shaped as one coherent experience.',
     scope: [
       'Mathematical grid systems and custom CSS architecture',
       'WebGL / Three.js and shader programming',

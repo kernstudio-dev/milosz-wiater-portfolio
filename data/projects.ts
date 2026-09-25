@@ -13,10 +13,6 @@ export interface Project {
     alt: string;
     aspectRatio?: string;
   };
-  metrics?: {
-    label: string;
-    value: string;
-  }[];
   technologies: string[];
   role: string;
   deliverables: string[];
@@ -34,17 +30,12 @@ export const PROJECTS: Project[] = [
     description:
       'High-performance WebGL digital artifact featuring liquid chrome physics, custom GLSL vertex shaders, and interactive camera dynamics.',
     longDescription:
-      'Eclipse Ink is an experimental creative development showcase engineered to push browser GPU capabilities to a consistent 60 FPS. Built using Next.js 15, custom GLSL fragment and vertex shaders, and GSAP scroll timelines, it renders dynamic metallic viscosity that recalculates light reflection vectors relative to cursor velocity and scroll momentum.',
+      'Eclipse Ink is an experimental creative-development study built around responsive liquid form, light and movement. Custom shaders and scroll choreography turn an abstract material into a tactile, cinematic web experience.',
     media: {
       type: 'image',
       src: '/projects/eclipse-ink.jpg',
       alt: 'Eclipse Ink 3D WebGL Fluid Experience',
     },
-    metrics: [
-      { label: 'FRAME RATE', value: '60 FPS LOCKED' },
-      { label: 'RENDER TIME', value: '3.2ms GPU' },
-      { label: 'VERTICES', value: '325,481 DYN' },
-    ],
     technologies: ['Next.js 15', 'TypeScript', 'Three.js / WebGL', 'GLSL Shaders', 'GSAP ScrollTrigger'],
     role: 'Lead Creative Developer & Shader Architect',
     deliverables: ['Custom GLSL Fluid Shaders', 'Physics Simulation Engine', 'Sound Design Integration', 'Responsive Viewport Pipeline'],
@@ -65,11 +56,6 @@ export const PROJECTS: Project[] = [
       src: '/projects/jarvis.jpg',
       alt: 'Jarvis Odkutka AI Agent Workstation',
     },
-    metrics: [
-      { label: 'VOICE LATENCY', value: '<120ms' },
-      { label: 'ACCURACY', value: '99.4% TASK' },
-      { label: 'AGENTS', value: '3 AUTONOMOUS' },
-    ],
     technologies: ['Python 3.12', 'React 19', 'FastAPI', 'Gemini Live API', 'WebSockets', 'Vector DB'],
     role: 'System Architect & Full-Stack AI Engineer',
     deliverables: ['Streaming Audio Pipeline', 'Multi-Agent Dispatcher', 'HUD Telemetry Interface', 'Safety Guardrail System'],
@@ -90,11 +76,6 @@ export const PROJECTS: Project[] = [
       src: '/projects/wbrent.jpg',
       alt: 'WBRent Luxury Architectural Platform',
     },
-    metrics: [
-      { label: 'PAGE LOAD', value: '0.42s LCP' },
-      { label: 'CONVERSION', value: '+44% YOY' },
-      { label: 'INVENTORY', value: '$180M+' },
-    ],
     technologies: ['Next.js App Router', 'TypeScript', 'PostgreSQL', 'Prisma', 'Tailwind/CSS Modules', 'Cloudflare Workers'],
     role: 'Principal Engineer & Product Designer',
     deliverables: ['Interactive Floor Plan Engine', 'Multi-Currency Escrow', 'Headless CMS Integration', 'Edge Cache Routing'],
@@ -115,11 +96,6 @@ export const PROJECTS: Project[] = [
       src: '/projects/wbtrade.jpg',
       alt: 'WBTrade Algorithmic Trading Terminal',
     },
-    metrics: [
-      { label: 'WS TICK RATE', value: '852 EVT/S' },
-      { label: 'LATENCY', value: '4.8ms' },
-      { label: 'CHART FPS', value: '60 FPS CANVAS' },
-    ],
     technologies: ['TypeScript', 'Rust / WebAssembly', 'HTML5 Canvas', 'WebSockets', 'GSAP', 'TimescaleDB'],
     role: 'Frontend Architect & Performance Engineer',
     deliverables: ['Custom Canvas Charting Engine', 'Wasm Indicator Library', 'Multi-Monitor Docking System', 'Risk Calculation Suite'],
@@ -140,11 +116,6 @@ export const PROJECTS: Project[] = [
       src: '/projects/happyplay.jpg',
       alt: 'Happy Play WB Foundation Platform',
     },
-    metrics: [
-      { label: 'ACTIVE USERS', value: '45,000+' },
-      { label: 'AVG DURATION', value: '18.4 MIN' },
-      { label: 'AWARDS', value: 'FWA OF THE DAY' },
-    ],
     technologies: ['React', 'Next.js', 'Matter.js Physics', 'GSAP Flip', 'Web Audio API', 'Supabase'],
     role: 'Creative Developer & Interaction Designer',
     deliverables: ['Micro-Interaction Design System', 'Gamification Logic', 'Physics Particle Canvas', 'Mobile Touch Gestures'],

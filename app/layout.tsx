@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Montserrat, Inter, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { CustomCursor } from '@/components/CustomCursor';
+import { AppProviders } from '@/components/AppProviders';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -94,16 +95,34 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${montserrat.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${montserrat.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('site-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;var l=localStorage.getItem('site-language');if(l==='pl'||l==='en')document.documentElement.lang=l;}catch(e){}})();`,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+              window.scrollTo(0, 0);
+              window.addEventListener('load', function () {
+                requestAnimationFrame(function () { window.scrollTo(0, 0); });
+              }, { once: true });
+            `,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="antialiased">
-        <CustomCursor />
-        {children}
+        <AppProviders>
+          <CustomCursor />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

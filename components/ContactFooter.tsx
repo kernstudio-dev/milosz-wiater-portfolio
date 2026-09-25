@@ -1,120 +1,72 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
-import { useScrollProgress } from '@/context/ScrollContext';
-import { scaleFontSize } from '@/lib/grid';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function ContactFooter() {
-  const scrollCtx = useScrollProgress();
-  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.footer;
-  const [visible, setVisible] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-
-  useEffect(() => {
-    setVisible(progress >= 0.98);
-  }, [progress]);
-
-  const bs = 90;
-  const headingSize = scaleFontSize(35.07, 3.46, bs);
-  const bodySize = scaleFontSize(18.53, 3.46, bs);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: '', email: '', message: '' });
-    }, 4000);
-  };
+  const [sent, setSent] = useState(false);
+  const { dictionary } = useLanguage();
 
   return (
     <PinnedSection id="footer" pinned={false}>
-      <div className="section-grid-inner footer-grid">
-        <div className={`footer-block ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '1 / 7', gridRow: '3 / 6' }}>
-          <h3 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase' }}>Contact</h3>
-          <a href="mailto:contact@kern.dev" style={{ fontSize: bodySize, color: 'var(--text-secondary)' }}>contact@kern.dev</a>
+      <div className="footer-layout">
+        <div className="footer-contact">
+          <h2>{dictionary.contact.contact}</h2>
+          <a href="mailto:contact@kern.dev">contact@kern.dev</a>
+          <span>{dictionary.contact.availability}</span>
         </div>
-
-        <div className={`footer-block ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '1 / 7', gridRow: '6 / 9', transitionDelay: '0.1s' }}>
-          <h3 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase' }}>Information</h3>
-          <p style={{ fontSize: bodySize, color: 'var(--text-secondary)' }}>Available for select commissions and ongoing partnerships.</p>
+        <div className="footer-info">
+          <h2>{dictionary.contact.information}</h2>
+          <p>{dictionary.contact.independent}</p>
+          <p>{dictionary.contact.commissions}</p>
+          <p>KERN / 2026</p>
         </div>
-
-        <div className={`footer-form-wrap ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '15 / 21', gridRow: '3 / 9' }}>
-          <h3 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase', marginBottom: 16 }}>Connect</h3>
-          {submitted ? (
-            <p className="font-mono" style={{ fontSize: bodySize }}>Message received</p>
+        <div className="footer-form-wrap">
+          <h2>{dictionary.contact.connect}</h2>
+          {sent ? (
+            <p className="footer-thanks">{dictionary.contact.thanks}</p>
           ) : (
-            <form onSubmit={handleSubmit} className="footer-form">
-              <input required placeholder="Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-              <input required type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-              <textarea required rows={3} placeholder="Message" value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} />
-              <button type="submit">Send Message</button>
+            <form onSubmit={(event) => { event.preventDefault(); setSent(true); }}>
+              <input name="name" required placeholder={dictionary.contact.name} aria-label={dictionary.contact.name} />
+              <input name="email" required type="email" placeholder="your.email@example.com" aria-label={dictionary.contact.email} />
+              <input name="company" placeholder={dictionary.contact.company} aria-label={dictionary.contact.company} />
+              <textarea name="message" required placeholder={dictionary.contact.message} aria-label={dictionary.contact.message} />
+              <button type="submit">{dictionary.contact.submit}</button>
             </form>
           )}
         </div>
-
-        <div className={`footer-legal font-mono ${visible ? 'footer-block--in' : ''}`} style={{ gridColumn: '1 / 9', gridRow: '9 / 10' }}>
-          <span>© {new Date().getFullYear()} KERN</span>
-        </div>
+        <div className="footer-legal"><span>KERN © 2026</span><span>{dictionary.contact.discipline}</span></div>
       </div>
 
       <style jsx>{`
-        .footer-grid {
-          padding-top: calc(var(--grid-block-size) * 2);
-          padding-bottom: var(--grid-block-size);
+        .footer-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; }
+        h2 { font: 300 16px/1 var(--font-display); color: var(--text-secondary); text-transform: none; }
+        .footer-contact, .footer-info { grid-column: 1 / 6; border: 1px solid var(--border-primary); padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+        .footer-contact { grid-row: 4 / 7; }
+        .footer-info { grid-row: 8 / 11; }
+        .footer-contact a, .footer-contact span, .footer-info p { font-size: 16px; line-height: 1.3; color: var(--text-secondary); }
+        .footer-contact span, .footer-info p:last-child { color: var(--text-tertiary); }
+        .footer-form-wrap { grid-column: -6 / -1; grid-row: 4 / 12; border: 1px solid var(--border-primary); padding-top: 24px; overflow: hidden; }
+        .footer-form-wrap h2 { padding: 0 14px 18px; }
+        form { height: calc(100% - 36px); display: grid; grid-template-rows: var(--grid-block-size) var(--grid-block-size) var(--grid-block-size) 3fr var(--grid-block-size); }
+        input, textarea { width: 100%; min-width: 0; padding: 16px 14px; color: var(--text-secondary); background: transparent; border: 0; border-top: 1px solid var(--border-primary); outline: none; font: 300 16px/1.35 var(--font-display); }
+        textarea { resize: none; }
+        input:focus, textarea:focus { background: color-mix(in srgb, var(--text-primary) 3%, transparent); }
+        button { border-top: 1px solid var(--border-primary); font-size: 16px; color: var(--text-secondary); }
+        button:hover { background: var(--text-primary); color: var(--bg-canvas); }
+        .footer-thanks { margin: 40px 14px; color: var(--text-secondary); }
+        .footer-legal { grid-column: 1 / 6; grid-row: 11 / 12; display: grid; grid-template-columns: 2fr 3fr; border: 1px solid var(--border-primary); }
+        .footer-legal span { display: flex; align-items: center; padding: 0 18px; font-size: 13px; color: var(--text-tertiary); border-right: 1px solid var(--border-primary); }
+        @media (min-width: 768px) and (max-height: 800px) {
+          .footer-contact, .footer-info, .footer-legal { grid-column: 1 / 7; }
+          .footer-form-wrap { grid-column: -7 / -1; }
         }
-        .footer-block,
-        .footer-form-wrap,
-        .footer-legal {
-          opacity: 0;
-          transform: translateY(12px);
-          transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .footer-block--in {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .footer-form {
-          display: flex;
-          flex-direction: column;
-          gap: var(--grid-block-size);
-        }
-        .footer-form input,
-        .footer-form textarea {
-          width: 100%;
-          padding: 8px 4px;
-          font-family: var(--font-mono);
-          font-size: 18.53px;
-          background: transparent;
-          border: none;
-          border-bottom: 1px solid var(--border-primary);
-          color: var(--text-primary);
-          outline: none;
-        }
-        .footer-form button {
-          align-self: flex-start;
-          padding: 12px 24px;
-          font-family: var(--font-mono);
-          font-size: 14px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          border: 1px solid var(--border-primary);
-          color: var(--text-primary);
-          transition: background 0.3s ease;
-        }
-        .footer-form button:hover {
-          background: rgba(67, 202, 188, 0.2);
-        }
-        .footer-legal {
-          font-size: 16.53px;
-          color: var(--text-tertiary);
-          display: flex;
-          align-items: center;
-          border-top: 1px solid var(--border-primary);
-          padding-top: 8px;
+        @media (max-width: 767px) {
+          .footer-layout { display: block; padding: 100px 20px 30px; overflow: auto; }
+          .footer-contact, .footer-info, .footer-form-wrap { margin-bottom: 18px; min-height: 190px; }
+          .footer-form-wrap { min-height: 520px; }
+          .footer-legal { height: 74px; }
         }
       `}</style>
     </PinnedSection>

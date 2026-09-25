@@ -24,9 +24,11 @@ export function computeIsPinnedLayout(vw: number, vh: number, blockSize: number)
   return vh >= 648 && aspect >= 1.418 && cols >= 16;
 }
 
+/** Round to an even block count: 2 * round(0.9*vw / (2*bs)) * bs, capped at 94%. */
 export function computeMaxWidth(vw: number, blockSize: number): number {
-  let w = Math.round((vw * 0.9) / blockSize) * blockSize;
-  w = Math.min(w, Math.floor((vw * 0.94) / blockSize) * blockSize);
+  const pair = blockSize * 2;
+  let w = Math.round((vw * 0.9) / pair) * pair;
+  w = Math.min(w, Math.floor((vw * 0.94) / pair) * pair);
   w = Math.max(w, 6 * blockSize);
   return w;
 }
@@ -51,21 +53,26 @@ export function computeGridMetrics(vw: number, vh: number): GridMetrics {
   };
 }
 
-/** Placeholder rects inside pinning-container (grid origin y=180 for hero/work/etc). */
-export function getPlaceholderRect(section: SectionId, bs: number): PlaceholderRect {
-  const gridTop = 2 * bs;
+/**
+ * Placeholder rects in pinning-container space.
+ * Content grid starts at y = 2 blocks. Hero/work/footer orbs are centred in that band.
+ * Services rest position is 7 blocks right of centre (the slide starts at -7 blocks).
+ */
+export function getPlaceholderRect(section: SectionId, bs: number, cols = 20): PlaceholderRect {
+  const y0 = 3 * bs;
+  const centeredX = (Math.floor(cols / 2) - 3) * bs;
 
   switch (section) {
     case 'hero':
-      return { x: 7 * bs, y: gridTop + 1 * bs, width: 6 * bs, height: 6 * bs };
+      return { x: centeredX, y: y0, width: 6 * bs, height: 6 * bs };
     case 'work':
-      return { x: 0, y: gridTop + 1 * bs, width: 5 * bs, height: 6 * bs };
+      return { x: 0, y: y0, width: 6 * bs, height: 6 * bs };
     case 'services':
-      return { x: 7 * bs, y: gridTop + 3 * bs, width: 6 * bs, height: 5 * bs };
+      return { x: Math.max(0, cols - 6) * bs, y: y0, width: 6 * bs, height: 5 * bs };
     case 'about':
-      return { x: 7 * bs, y: gridTop + 3 * bs, width: 6 * bs, height: 5 * bs };
+      return { x: centeredX, y: y0, width: 6 * bs, height: 5 * bs };
     case 'footer':
-      return { x: 7 * bs, y: gridTop + 1 * bs, width: 6 * bs, height: 6 * bs };
+      return { x: centeredX, y: y0, width: 6 * bs, height: 6 * bs };
   }
 }
 

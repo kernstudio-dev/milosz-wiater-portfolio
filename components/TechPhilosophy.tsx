@@ -2,122 +2,62 @@
 
 import { PinnedSection } from '@/components/PinnedSection';
 import { useScrollProgress } from '@/context/ScrollContext';
-import { ABOUT_TICKER } from '@/lib/motionMap';
-import { scaleFontSize } from '@/lib/grid';
+import { useLanguage } from '@/context/LanguageContext';
 
-const TECH_ITEMS = [
-  'NEXT.JS', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'GLSL', 'GSAP', 'LENIS',
-  'NODE.JS', 'PYTHON', 'FASTAPI', 'GEMINI', 'FIGMA', 'WEBGL', 'VERCEL',
-  'POSTGRESQL', 'DOCKER', 'WEBSOCKETS',
-];
+const TECH = ['NEXT.JS', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'GLSL', 'GSAP', 'NODE.JS', 'PYTHON', 'FASTAPI', 'POSTGRESQL'];
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 export function TechPhilosophy() {
-  const scrollCtx = useScrollProgress();
-  const progress = typeof scrollCtx === 'number' ? 0 : scrollCtx.progress.about;
-  const isPinned = typeof scrollCtx !== 'number' && scrollCtx.isPinned('about');
-
-  const tickerT = Math.max(0, Math.min(1, (progress - ABOUT_TICKER.start) / (ABOUT_TICKER.end - ABOUT_TICKER.start)));
-  const tickerX = ABOUT_TICKER.px * tickerT;
-
-  const bs = 90;
-  const headingSize = scaleFontSize(43.07, 3.46, bs);
-  const bodySize = scaleFontSize(22.53, 3.46, bs);
+  const progress = useScrollProgress('about');
+  const { dictionary } = useLanguage();
+  const enter = clamp01((progress - 0.06) / 0.14);
+  const exit = clamp01((progress - 0.88) / 0.12);
+  const visibility = enter * (1 - exit);
+  const ticker = clamp01((progress - 0.3) / 0.65) * 480;
 
   return (
     <PinnedSection id="about">
-      <div className="section-grid-inner about-grid">
-        <div className={`about-heading border-draw ${isPinned ? 'is-visible' : ''}`} style={{ gridColumn: '1 / 8', gridRow: '3 / 5' }}>
-          <h2 style={{ fontSize: headingSize, fontWeight: 200, textTransform: 'uppercase' }}>KERN</h2>
-          <p className="about-tagline font-mono">Creative Development</p>
+      <div className="about-layout" style={{ opacity: visibility }}>
+        <div className="about-heading">
+          <h2>{dictionary.about.title}</h2>
+          <p>{dictionary.about.intro}</p>
         </div>
-
-        <div className={`about-bio ${isPinned ? 'reveal-visible' : 'reveal-hidden'}`} style={{ gridColumn: '1 / 8', gridRow: '5 / 8' }}>
-          <p style={{ fontSize: bodySize, fontWeight: 200, lineHeight: 1.35, maxWidth: 520 }}>
-            I design and build digital products where strategy, interaction, development and visual identity work as one system.
-          </p>
-          <p className="about-secondary">
-            Working independently with founders, creative agencies, and product teams to engineer digital experiences that stand out without unnecessary noise.
-          </p>
+        <a href="#footer" className="about-cta">{dictionary.about.cta}</a>
+        <p className="about-copy">{dictionary.about.copy}</p>
+        <div className="about-portrait">
+          <img src="/images/milosz_portrait.jpg" alt={dictionary.about.portraitAlt} />
         </div>
-
-        <div
-          className={`about-portrait ${isPinned ? 'about-portrait--visible' : ''}`}
-          style={{ gridColumn: '15 / 21', gridRow: '3 / 8' }}
-        >
-          <div className="about-portrait-placeholder">
-            <span className="font-mono">PORTRAIT</span>
+        <div className="about-ticker">
+          <div style={{ transform: `translate3d(-${ticker}px,0,0)` }}>
+            {[...TECH, ...TECH].map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}
           </div>
-        </div>
-
-        <div className="about-ticker-wrap" style={{ gridColumn: '1 / -1', gridRow: '9 / 10' }}>
-          <div className="about-ticker font-mono" style={{ transform: `translateX(-${tickerX}px)` }}>
-            {TECH_ITEMS.map((item) => (
-              <span key={item} className="about-ticker-item">{item}</span>
-            ))}
-          </div>
-          <span className="about-ticker-label font-mono">{`translateX: ${Math.round(tickerX)}px`}</span>
+          <small>translateX: {Math.round(ticker)}px</small>
         </div>
       </div>
 
       <style jsx>{`
-        .about-grid {
-          padding-top: calc(var(--grid-block-size) * 2);
-          padding-bottom: var(--grid-block-size);
+        .about-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); transition: opacity .08s linear; overflow: hidden; }
+        .about-heading { grid-column: 1 / 9; grid-row: 3 / 4; align-self: end; }
+        .about-heading h2 { font: 200 clamp(30px,2.8vw,42px)/.95 var(--font-display); letter-spacing: -.035em; color: var(--text-secondary); }
+        .about-heading p { margin-top: 4px; font-size: 14px; color: var(--text-tertiary); }
+        .about-cta { grid-column: -3 / -1; grid-row: 3 / 4; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); font-size: 15px; color: var(--text-secondary); }
+        .about-copy { grid-column: 1 / 7; grid-row: 4 / 9; padding: 110px 60px; font: 300 clamp(18px,1.55vw,23px)/1.35 var(--font-display); color: var(--text-secondary); border: 1px solid var(--border-primary); overflow: hidden; }
+        .about-portrait { grid-column: -7 / -1; grid-row: 4 / 10; margin: 18px; overflow: hidden; background: var(--bg-elevated); }
+        .about-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 28%; filter: grayscale(1) contrast(1.05); transform: scale(${1.08 - enter * .08}); }
+        .about-ticker { grid-column: 1 / -7; grid-row: 9 / 11; position: relative; display: flex; align-items: center; border: 1px solid var(--border-primary); overflow: hidden; }
+        .about-ticker > div { display: flex; align-items: center; gap: 70px; min-width: max-content; padding: 0 20px; will-change: transform; }
+        .about-ticker span { font: 600 13px/1 var(--font-sans); color: var(--text-quaternary); white-space: nowrap; }
+        .about-ticker small { position: absolute; left: 10px; bottom: 9px; font: 10px/1 var(--font-mono); color: var(--text-quaternary); }
+        @media (min-width: 768px) and (max-height: 800px) {
+          .about-copy { grid-column: 1 / 8; }
+          .about-portrait { grid-column: -8 / -1; }
         }
-        .about-tagline {
-          font-size: 16.53px;
-          color: var(--text-tertiary);
-          margin-top: 8px;
-          letter-spacing: 0.08em;
-        }
-        .about-secondary {
-          margin-top: 16px;
-          font-size: 18.53px;
-          color: var(--text-secondary);
-          line-height: 1.6;
-          max-width: 480px;
-        }
-        .about-portrait-placeholder {
-          width: 100%;
-          height: 100%;
-          min-height: calc(var(--grid-block-size) * 5);
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-primary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-tertiary);
-          font-size: 11px;
-          clip-path: inset(100% 0 0 0);
-          transition: clip-path 2s ease;
-        }
-        .about-portrait--visible .about-portrait-placeholder {
-          clip-path: inset(0 0 0 0);
-        }
-        .about-ticker-wrap {
-          position: relative;
-          overflow: hidden;
-          border-top: 1px solid var(--border-primary);
-          padding: 12px 0;
-        }
-        .about-ticker {
-          display: flex;
-          gap: 40px;
-          width: max-content;
-          will-change: transform;
-        }
-        .about-ticker-item {
-          font-size: 16.53px;
-          letter-spacing: 0.12em;
-          color: var(--text-tertiary);
-          white-space: nowrap;
-        }
-        .about-ticker-label {
-          position: absolute;
-          right: 0;
-          top: 4px;
-          font-size: 11px;
-          color: var(--text-quaternary);
+        @media (max-width: 767px) {
+          .about-layout { display: block; padding: 110px 20px 30px; }
+          .about-cta { position: absolute; top: 34px; right: 20px; padding: 12px; }
+          .about-copy { margin-top: 28px; padding: 30px 20px; min-height: 220px; }
+          .about-portrait { margin: 18px 0; height: 42vh; }
+          .about-ticker { height: 90px; }
         }
       `}</style>
     </PinnedSection>

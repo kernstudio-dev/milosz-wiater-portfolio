@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 import { useLenis } from '@/hooks/useLenis';
 import { useWindowSize } from '@/hooks/useWindowSize';
-import { ThemeProvider } from '@/context/ThemeContext';
 import { ScrollProvider } from '@/context/ScrollContext';
 import { BubbleProvider, useBubble } from '@/context/BubbleContext';
 import { PageLoader } from '@/components/PageLoader';
@@ -36,7 +35,6 @@ function HomeInner() {
         id="main-content"
         style={{
           position: 'relative',
-          backgroundColor: 'var(--bg-canvas)',
           opacity: loaderFinished ? 1 : 0,
           transition: 'opacity 0.5s ease',
         }}
@@ -57,12 +55,10 @@ function HomeInner() {
 
 export default function Home() {
   return (
-    <ThemeProvider>
-      <ScrollProvider>
-        <BubbleProvider>
-          <HomeInner />
-        </BubbleProvider>
-      </ScrollProvider>
-    </ThemeProvider>
+    <ScrollProvider>
+      <BubbleProvider>
+        <HomeInner />
+      </BubbleProvider>
+    </ScrollProvider>
   );
 }

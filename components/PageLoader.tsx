@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 
 interface PageLoaderProps {
@@ -9,14 +9,19 @@ interface PageLoaderProps {
 
 export function PageLoader({ onComplete }: PageLoaderProps) {
   const [visible, setVisible] = useState(true);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    const tl = gsap.timeline({
-      onComplete: () => {
-        setVisible(false);
-        onComplete?.();
-      },
-    });
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setVisible(false);
+      onCompleteRef.current?.();
+    };
+
+    const tl = gsap.timeline({ onComplete: finish });
 
     tl.fromTo(
       '.loader-letter',
@@ -25,14 +30,18 @@ export function PageLoader({ onComplete }: PageLoaderProps) {
       0.2
     );
 
-    tl.to('.loader-box', { className: 'loader-box loader-box--active' }, 0);
-
     tl.to('.page-loader-overlay', {
       clipPath: 'inset(50% 0 50% 0)',
       duration: 0.5,
       ease: 'power2.inOut',
     }, 1.8);
-  }, [onComplete]);
+
+    const fallback = window.setTimeout(finish, 2800);
+    return () => {
+      tl.kill();
+      window.clearTimeout(fallback);
+    };
+  }, []);
 
   if (!visible) return null;
 

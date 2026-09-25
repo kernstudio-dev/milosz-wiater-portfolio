@@ -9,20 +9,10 @@ interface SectionGridProps {
   bubbleHole?: PlaceholderRect | null;
 }
 
-function cellOverlapsHole(
-  colLeft: number,
-  rowTop: number,
-  bs: number,
-  hole: PlaceholderRect
-): boolean {
-  const cx = colLeft;
-  const cy = rowTop;
-  return (
-    cx + bs > hole.x &&
-    cx < hole.x + hole.width &&
-    cy + bs > hole.y &&
-    cy < hole.y + hole.height
-  );
+function cellCenterInHole(colLeft: number, rowTop: number, bs: number, hole: PlaceholderRect): boolean {
+  const cx = colLeft + bs / 2;
+  const cy = rowTop + bs / 2;
+  return cx >= hole.x && cx < hole.x + hole.width && cy >= hole.y && cy < hole.y + hole.height;
 }
 
 export function SectionGrid({ metrics, bubbleHole }: SectionGridProps) {
@@ -42,7 +32,7 @@ export function SectionGrid({ metrics, bubbleHole }: SectionGridProps) {
           left >= xOffset - bs &&
           left < xOffset + sectionCols * bs + bs;
         if (!inSection) continue;
-        const hidden = bubbleHole ? cellOverlapsHole(left - xOffset, top, bs, bubbleHole) : false;
+        const hidden = bubbleHole ? cellCenterInHole(left - xOffset, top, bs, bubbleHole) : false;
         result.push({ key: `${r}-${c}`, left, top, hidden });
       }
     }

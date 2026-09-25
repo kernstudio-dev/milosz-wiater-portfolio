@@ -159,46 +159,6 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           />
         </div>
 
-        {/* Metrics Grid */}
-        {project.metrics && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            {project.metrics.map((metric) => (
-              <div
-                key={metric.label}
-                className="corner-box"
-                style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--bg-elevated)',
-                }}
-              >
-                <span className="corner-crosshair corner-crosshair-tl" />
-                <span className="corner-crosshair corner-crosshair-tr" />
-                <span className="corner-crosshair corner-crosshair-bl" />
-                <span className="corner-crosshair corner-crosshair-br" />
-                <div className="tech-label" style={{ marginBottom: '6px' }}>
-                  {metric.label}
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {metric.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* In-depth Architecture & Role Breakdown */}
         <div
           style={{

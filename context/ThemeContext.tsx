@@ -20,18 +20,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark');
 
   useEffect(() => {
-    // Check saved theme or system preference
     const saved = localStorage.getItem('site-theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      setThemeState(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else {
-      // By default in vanlent.dev, default can be light or dark based on hours
-      const h = new Date().getHours();
-      const defaultTheme = h >= 7 && h < 19 ? 'light' : 'dark';
-      setThemeState(defaultTheme);
-      document.documentElement.setAttribute('data-theme', defaultTheme);
-    }
+    const initial = saved === 'dark' || saved === 'light'
+      ? saved
+      : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    setThemeState(initial);
+    document.documentElement.setAttribute('data-theme', initial);
+    requestAnimationFrame(() => document.documentElement.setAttribute('data-theme-ready', 'true'));
   }, []);
 
   const setTheme = (newTheme: Theme) => {

@@ -20,16 +20,8 @@ export function CustomCursor() {
     let followerY = -100;
     let rafId: number;
 
-    const onMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-      }
-
-      // Context detection based on hovered element
-      const target = e.target as HTMLElement | null;
+    const readTarget = () => {
+      const target = document.elementFromPoint(mouseX, mouseY) as HTMLElement | null;
       if (!target) return;
 
       const cursorTarget = target.closest('[data-cursor]') as HTMLElement | null;
@@ -46,6 +38,18 @@ export function CustomCursor() {
         setCursorText('');
       }
     };
+    const onMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
+      }
+      readTarget();
+    };
+    const resetCursor = () => {
+      setCursorState('default');
+      setCursorText('');
+    };
 
     // Smooth lerping loop for outer cursor follower
     const render = () => {
@@ -61,10 +65,16 @@ export function CustomCursor() {
     };
 
     window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('scroll', readTarget, { passive: true });
+    window.addEventListener('blur', resetCursor);
+    document.addEventListener('mouseleave', resetCursor);
     rafId = requestAnimationFrame(render);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('scroll', readTarget);
+      window.removeEventListener('blur', resetCursor);
+      document.removeEventListener('mouseleave', resetCursor);
       cancelAnimationFrame(rafId);
     };
   }, []);
