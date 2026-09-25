@@ -237,7 +237,7 @@ export function BubbleScene() {
       const sectionCols = gridMetrics?.sectionCols ?? 18;
       const xOffset = gridMetrics?.xOffset ?? Math.max(0, (width - bs * sectionCols) / 2);
       const centerX = width < 768 ? width / 2 : xOffset + bs * (sectionCols / 2);
-      const workX = width < 768 ? width / 2 : xOffset + bs * 3;
+      const workX = width < 768 ? width / 2 : xOffset + bs * 1.55;
       const rightX = width < 768 ? width / 2 : xOffset + bs * (sectionCols - 3);
       const travel = sampleOrbTravel(globalProgress, travelState);
       const x = travel.anchor < 0 ? lerp(centerX, workX, -travel.anchor) : lerp(centerX, rightX, travel.anchor);
@@ -268,7 +268,7 @@ export function BubbleScene() {
       const local = smooth(wrapped - fromIndex);
       lerpPersonality(SERVICE_PERSONALITIES[fromIndex], SERVICE_PERSONALITIES[toIndex], local, serviceBlend);
       serviceColor.copy(servicePalette[fromIndex]).lerp(servicePalette[toIndex], local);
-      const serviceWeight = smooth((globalProgress - .385) / .045) * (1 - smooth((globalProgress - .735) / .05));
+      const serviceWeight = smooth((globalProgress - .372) / .05) * (1 - smooth((globalProgress - .716) / .06));
       samplePersonality(globalProgress, serviceBlend, personality);
 
       // ---- AMBIENT (time only) --------------------------------------------

@@ -1,33 +1,35 @@
 'use client';
 
 import { PinnedSection } from '@/components/PinnedSection';
-import { useScrollProgress } from '@/context/ScrollContext';
+import { useScene } from '@/hooks/useScene';
 import { useLanguage } from '@/context/LanguageContext';
 
 const TECH = ['NEXT.JS', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'GLSL', 'GSAP', 'NODE.JS', 'PYTHON', 'FASTAPI', 'POSTGRESQL'];
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
 
 export function TechPhilosophy() {
-  const progress = useScrollProgress('about');
+  const { progress, enter: enterWindow, leave } = useScene('about');
   const { dictionary } = useLanguage();
-  const enter = clamp01((progress - 0.06) / 0.14);
-  const exit = clamp01((progress - 0.88) / 0.12);
-  const visibility = enter * (1 - exit);
-  const ticker = clamp01((progress - 0.3) / 0.65) * 480;
+  const heading = smooth((enterWindow - .42) / .3);
+  const copy = smooth((enterWindow - .5) / .34);
+  const enter = smooth((enterWindow - .56) / .4);
+  const exit = smooth(leave / .42);
+  const ticker = clamp01((progress - 0.25) / 0.7) * 480;
 
   return (
     <PinnedSection id="about">
-      <div className="about-layout" style={{ opacity: visibility }}>
+      <div className="about-layout" style={{ clipPath: `inset(0 0 ${exit * 100}% 0)` }}>
         <div className="about-heading">
-          <h2>{dictionary.about.title}</h2>
-          <p>{dictionary.about.intro}</p>
+          <h2 className="mask"><span style={{ transform: `translate3d(0,${(1 - heading) * 105}%,0)` }}>{dictionary.about.title}</span></h2>
+          <p style={{ opacity: heading }}>{dictionary.about.intro}</p>
         </div>
-        <a href="#footer" className="about-cta">{dictionary.about.cta}</a>
-        <p className="about-copy">{dictionary.about.copy}</p>
-        <div className="about-portrait">
+        <a href="#footer" className="about-cta" style={{ clipPath: `inset(0 0 0 ${(1 - heading) * 100}%)` }}>{dictionary.about.cta}</a>
+        <p className="about-copy" style={{ clipPath: `inset(0 ${(1 - copy) * 100}% 0 0)` }}>{dictionary.about.copy}</p>
+        <div className="about-portrait" style={{ clipPath: `inset(${(1 - enter) * 100}% 0 0 0)` }}>
           <img src="/images/milosz_portrait.jpg" alt={dictionary.about.portraitAlt} />
         </div>
-        <div className="about-ticker">
+        <div className="about-ticker" style={{ clipPath: `inset(0 ${(1 - enter) * 100}% 0 0)` }}>
           <div style={{ transform: `translate3d(-${ticker}px,0,0)` }}>
             {[...TECH, ...TECH].map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}
           </div>
@@ -36,7 +38,9 @@ export function TechPhilosophy() {
       </div>
 
       <style jsx>{`
-        .about-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); transition: opacity .08s linear; overflow: hidden; }
+        .about-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; }
+        .mask { display: block; overflow: hidden; }
+        .mask > span { display: block; }
         .about-heading { grid-column: 1 / 9; grid-row: 3 / 4; align-self: end; }
         .about-heading h2 { font: 200 clamp(30px,2.8vw,42px)/.95 var(--font-display); letter-spacing: -.035em; color: var(--text-secondary); }
         .about-heading p { margin-top: 4px; font-size: 14px; color: var(--text-tertiary); }

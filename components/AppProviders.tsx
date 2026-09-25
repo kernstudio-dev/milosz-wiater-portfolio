@@ -2,11 +2,14 @@
 
 import { ThemeProvider } from '@/context/ThemeContext';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { TransitionProvider } from '@/context/TransitionContext';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <LanguageProvider>{children}</LanguageProvider>
+      <LanguageProvider>
+        <TransitionProvider>{children}</TransitionProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
-import { useScrollProgress } from '@/context/ScrollContext';
+import { useScene } from '@/hooks/useScene';
 import { useLanguage } from '@/context/LanguageContext';
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
 
 export function HeroSection() {
-  const progress = useScrollProgress('hero');
+  const { progress, leave } = useScene('hero');
   const { dictionary } = useLanguage();
   const [entered, setEntered] = useState(false);
 
@@ -17,25 +18,29 @@ export function HeroSection() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const exit = clamp01((progress - 0.78) / 0.22);
+  // Exit inside the Hero -> Work overlap window: words leave through their masks,
+  // labels wipe, the frame opens outward while the orb starts travelling.
+  const wordsOut = (i: number) => smooth((leave - .04 - i * .05) / .3);
+  const labelsOut = smooth((leave - .02) / .26);
+  const frameOut = smooth((leave - .08) / .3);
   const frameInset = Math.round((1 - clamp01(progress / 0.75)) * 28);
 
   return (
     <PinnedSection id="hero">
-      <div className={`hero-layout ${entered ? 'hero-layout--entered' : ''}`} style={{ opacity: 1 - exit }}>
-        <p className="hero-label hero-label--top-left"><span>01.</span> {dictionary.hero.role}</p>
-        <p className="hero-label hero-label--top-right"><span>02.</span> {dictionary.hero.availability}</p>
+      <div className={`hero-layout ${entered ? 'hero-layout--entered' : ''}`}>
+        <p className="hero-label hero-label--top-left" style={{ clipPath: `inset(0 ${labelsOut * 100}% 0 0)` }}><span>01.</span> {dictionary.hero.role}</p>
+        <p className="hero-label hero-label--top-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}><span>02.</span> {dictionary.hero.availability}</p>
 
         <div className="hero-words hero-words--left">
-          <span>{dictionary.hero.shaping}</span>
-          <span>{dictionary.hero.concepts}</span>
+          <span className="word-mask"><span style={{ transform: `translate3d(0,${-wordsOut(0) * 105}%,0)` }}>{dictionary.hero.shaping}</span></span>
+          <span className="word-mask"><span style={{ transform: `translate3d(0,${-wordsOut(1) * 105}%,0)` }}>{dictionary.hero.concepts}</span></span>
         </div>
         <div className="hero-words hero-words--right">
-          <span>{dictionary.hero.building}</span>
-          <span>{dictionary.hero.experiences}</span>
+          <span className="word-mask"><span style={{ transform: `translate3d(0,${-wordsOut(1) * 105}%,0)` }}>{dictionary.hero.building}</span></span>
+          <span className="word-mask"><span style={{ transform: `translate3d(0,${-wordsOut(2) * 105}%,0)` }}>{dictionary.hero.experiences}</span></span>
         </div>
 
-        <div className="hero-orb-frame" aria-hidden="true">
+        <div className="hero-orb-frame" aria-hidden="true" style={{ transform: `translateX(-50%) scale(${1 + frameOut * .18})`, opacity: 1 - frameOut }}>
           <span className="hero-frame-note hero-frame-note--top">clip-path: inset(0px {frameInset}px {frameInset}px 0px)</span>
           <span className="hero-frame-note hero-frame-note--left">clip-path: inset({frameInset}px {frameInset}px 0px 0px)</span>
           <span className="hero-frame-note hero-frame-note--right">clip-path: inset(0px 0px {frameInset}px {frameInset}px)</span>
@@ -46,11 +51,11 @@ export function HeroSection() {
           <i className="frame-corner frame-corner--br" />
         </div>
 
-        <div className="hero-label hero-label--bottom-left">
+        <div className="hero-label hero-label--bottom-left" style={{ clipPath: `inset(0 ${labelsOut * 100}% 0 0)` }}>
           <span>03.</span>
           <a href="mailto:contact@kern.dev">M: CONTACT@KERN.DEV</a>
         </div>
-        <a href="#footer" className="hero-label hero-label--bottom-right"><span>04.</span> {dictionary.hero.open}</a>
+        <a href="#footer" className="hero-label hero-label--bottom-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}><span>04.</span> {dictionary.hero.open}</a>
       </div>
 
       <style jsx>{`
@@ -60,8 +65,6 @@ export function HeroSection() {
           display: grid;
           grid-template-columns: repeat(var(--grid-cols), var(--grid-block-size));
           grid-template-rows: repeat(12, var(--grid-block-size));
-          transform: translateY(${-exit * 90}px);
-          transition: opacity 0.08s linear;
         }
         .hero-label {
           align-self: start;
@@ -87,14 +90,15 @@ export function HeroSection() {
         }
         .hero-words--left { grid-column: 3 / 7; grid-row: 6 / 8; }
         .hero-words--right { grid-column: -7 / -1; grid-row: 6 / 8; align-items: flex-end; }
-        .hero-words span {
-          display: block;
+        .word-mask { display: block; overflow: hidden; }
+        .word-mask > span { display: block; will-change: transform; }
+        .word-mask {
           transform: translateY(115%);
           opacity: 0;
           transition: transform 0.9s cubic-bezier(.16,1,.3,1), opacity 0.5s ease;
         }
-        .hero-words span:nth-child(2) { transition-delay: 0.08s; color: var(--text-quaternary); }
-        .hero-layout--entered .hero-words span { transform: translateY(0); opacity: 1; }
+        .word-mask:nth-child(2) { transition-delay: 0.08s; color: var(--text-quaternary); }
+        .hero-layout--entered .word-mask { transform: translateY(0); opacity: 1; }
         .hero-orb-frame {
           position: absolute;
           left: 50%;

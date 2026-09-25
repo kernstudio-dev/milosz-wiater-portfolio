@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react
 import type { Project } from '@/data/projects';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
+import { usePageTransition } from '@/context/TransitionContext';
 import styles from './project.module.css';
 
 interface ProjectStoryProps {
@@ -17,6 +18,8 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 
 export function ProjectStory({ project, next }: ProjectStoryProps) {
   const router = useRouter();
+  const { pageReady } = usePageTransition();
+  useEffect(() => { pageReady(); }, [pageReady]);
   const { theme, toggleTheme } = useTheme();
   const { language, dictionary, toggleLanguage } = useLanguage();
   const pageRef = useRef<HTMLElement>(null);

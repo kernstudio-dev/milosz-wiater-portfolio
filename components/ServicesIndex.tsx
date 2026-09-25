@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
-import { useScrollProgress } from '@/context/ScrollContext';
+import { useScene } from '@/hooks/useScene';
 import { useBubble } from '@/context/BubbleContext';
 import { SERVICES } from '@/data/services';
 import { useLanguage } from '@/context/LanguageContext';
@@ -30,8 +30,7 @@ const TRANSITION_MS = 1150;
  * - leaving the scene resets autoOffset → re-entry is deterministic (01 from above, 06 from below)
  */
 export function ServicesIndex() {
-  const scroll = useScrollProgress();
-  const progress = scroll.progress.services;
+  const { scroll, progress, enter, leave } = useScene('services');
   const { setActiveServiceIndex } = useBubble();
   const { dictionary } = useLanguage();
   const layoutRef = useRef<HTMLDivElement>(null);
@@ -48,16 +47,16 @@ export function ServicesIndex() {
 
   const slotProgress = clamp01((progress - SLOT_START) / (SLOT_END - SLOT_START));
   const scrollSlot = Math.min(COUNT - 1, Math.floor(slotProgress * COUNT));
-  const sceneActive = inViewport && progress > .1 && progress < .95;
+  const sceneActive = inViewport && enter > .95 && leave < .04;
   const displayed = mod(scrollSlot + autoOffset, COUNT);
   const service = dictionary.services.items[displayed];
   const previousService = previous ? dictionary.services.items[previous.index] : null;
   const direction = previous?.direction ?? 1;
 
-  const headingReveal = smooth((progress - .05) / .09);
-  const panelReveal = smooth((progress - .075) / .085);
-  const listReveal = smooth((progress - .095) / .075);
-  const exit = smooth((progress - .9) / .1);
+  const headingReveal = smooth((enter - .42) / .3);
+  const panelReveal = smooth((enter - .48) / .32);
+  const listReveal = smooth((enter - .56) / .34);
+  const exit = smooth(leave / .42);
 
   // One place reacts to the displayed index: transition layers + orb personality.
   useEffect(() => {
@@ -89,7 +88,7 @@ export function ServicesIndex() {
 
   // Once the scene is fully off screen, hand control fully back to scroll so
   // re-entry is deterministic. Never reset while any part is still visible.
-  const offscreen = !inViewport || progress <= .02 || progress >= .999;
+  const offscreen = !inViewport || enter <= .05 || leave >= .99;
   useEffect(() => {
     if (offscreen) setAutoOffset(0);
   }, [offscreen]);
@@ -144,7 +143,7 @@ export function ServicesIndex() {
         className={`services-layout dir-${direction > 0 ? 'fwd' : 'back'}`}
         data-active-service={displayed}
         data-scroll-slot={scrollSlot}
-        style={{ transform: `translate3d(0,${-exit * 60}px,0)`, opacity: 1 - exit * .85 }}
+        style={{ clipPath: `inset(0 0 ${exit * 100}% 0)` }}
       >
         <div className="services-heading">
           <p style={{ opacity: headingReveal, transform: `translateY(${(1 - headingReveal) * 14}px)` }}>{dictionary.services.intro}</p>

@@ -84,13 +84,13 @@ type Stop = { at: number; preset: OrbPersonality | 'services' };
 /** Section path along globalProgress; 'services' resolves to the live service blend. */
 const PATH: Stop[] = [
   { at: 0, preset: HERO },
-  { at: .055, preset: HERO },
-  { at: .115, preset: WORK },
+  { at: .01, preset: HERO },
+  { at: .066, preset: WORK },
   { at: .35, preset: WORK },
   { at: .425, preset: 'services' },
-  { at: .735, preset: 'services' },
-  { at: .795, preset: ABOUT },
-  { at: .935, preset: ABOUT },
+  { at: .715, preset: 'services' },
+  { at: .782, preset: ABOUT },
+  { at: .93, preset: ABOUT },
   { at: .99, preset: CONTACT },
 ];
 

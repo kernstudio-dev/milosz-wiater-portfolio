@@ -3,26 +3,32 @@
 import { useState } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
 import { useLanguage } from '@/context/LanguageContext';
+import { useScene } from '@/hooks/useScene';
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
 
 export function ContactFooter() {
   const [sent, setSent] = useState(false);
   const { dictionary } = useLanguage();
+  const { enter } = useScene('footer');
+  const reveal = (delay: number) => smooth((enter - .45 - delay) / .32);
 
   return (
     <PinnedSection id="footer" pinned={false}>
       <div className="footer-layout">
-        <div className="footer-contact">
+        <div className="footer-contact" style={{ clipPath: `inset(0 0 ${(1 - reveal(0)) * 100}% 0)` }}>
           <h2>{dictionary.contact.contact}</h2>
           <a href="mailto:contact@kern.dev">contact@kern.dev</a>
           <span>{dictionary.contact.availability}</span>
         </div>
-        <div className="footer-info">
+        <div className="footer-info" style={{ clipPath: `inset(0 0 ${(1 - reveal(.08)) * 100}% 0)` }}>
           <h2>{dictionary.contact.information}</h2>
           <p>{dictionary.contact.independent}</p>
           <p>{dictionary.contact.commissions}</p>
           <p>KERN / 2026</p>
         </div>
-        <div className="footer-form-wrap">
+        <div className="footer-form-wrap" style={{ clipPath: `inset(0 0 ${(1 - reveal(.04)) * 100}% 0)` }}>
           <h2>{dictionary.contact.connect}</h2>
           {sent ? (
             <p className="footer-thanks">{dictionary.contact.thanks}</p>
@@ -36,7 +42,7 @@ export function ContactFooter() {
             </form>
           )}
         </div>
-        <div className="footer-legal"><span>KERN © 2026</span><span>{dictionary.contact.discipline}</span></div>
+        <div className="footer-legal" style={{ clipPath: `inset(0 ${(1 - reveal(.14)) * 100}% 0 0)` }}><span>KERN © 2026</span><span>{dictionary.contact.discipline}</span></div>
       </div>
 
       <style jsx>{`
