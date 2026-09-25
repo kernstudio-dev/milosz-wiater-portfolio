@@ -56,6 +56,10 @@ export function HeroSection() {
           <a href="mailto:contact@kern.dev">M: CONTACT@KERN.DEV</a>
         </div>
         <a href="#footer" className="hero-label hero-label--bottom-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}><span>04.</span> {dictionary.hero.open}</a>
+
+        {/* portrait only: the orb's window and the route's first station */}
+        <div className="hero-orb-slot" data-orb-slot aria-hidden="true" />
+        <p className="route-station hero-station" data-route-station><b>01</b> / {dictionary.route.start}</p>
       </div>
 
       <style jsx>{`
@@ -118,18 +122,43 @@ export function HeroSection() {
         .hero-frame-note--left { left: 8px; top: 50%; transform: rotate(90deg) translateX(-50%); transform-origin: left top; }
         .hero-frame-note--right { right: 8px; top: 50%; transform: rotate(90deg) translateX(-50%); transform-origin: right top; }
         .hero-frame-note--bottom { bottom: 6px; right: 8px; }
+        .hero-orb-slot, .hero-station { display: none; }
         @media (max-width: 767px) {
-          .hero-layout { display: block; padding: 120px 24px 48px; }
-          .hero-label--top-left, .hero-label--top-right { position: absolute; top: 100px; }
-          .hero-label--top-left { left: 24px; }
-          .hero-label--top-right { right: 24px; text-align: right; }
-          .hero-words { position: absolute; font-size: clamp(34px, 10vw, 56px); }
-          .hero-words--left { left: 24px; top: 26%; }
-          .hero-words--right { right: 24px; bottom: 24%; }
-          .hero-orb-frame { position: absolute; width: min(78vw, 420px); aspect-ratio: 1; left: 50%; top: 50%; transform: translate(-50%,-50%); }
-          .hero-label--bottom-left { position: absolute; left: 24px; bottom: 40px; }
-          .hero-label--bottom-right { position: absolute; right: 24px; bottom: 40px; }
+          :global(html[data-layout='flow']) .hero-layout { display: block; padding: 120px 24px 48px; }
+          :global(html[data-layout='flow']) .hero-label--top-left, :global(html[data-layout='flow']) .hero-label--top-right { position: absolute; top: 100px; }
+          :global(html[data-layout='flow']) .hero-label--top-left { left: 24px; }
+          :global(html[data-layout='flow']) .hero-label--top-right { right: 24px; text-align: right; }
+          :global(html[data-layout='flow']) .hero-words { position: absolute; font-size: clamp(34px, 10vw, 56px); }
+          :global(html[data-layout='flow']) .hero-words--left { left: 24px; top: 26%; }
+          :global(html[data-layout='flow']) .hero-words--right { right: 24px; bottom: 24%; }
+          :global(html[data-layout='flow']) .hero-orb-frame { position: absolute; width: min(78vw, 420px); aspect-ratio: 1; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+          :global(html[data-layout='flow']) .hero-label--bottom-left { position: absolute; left: 24px; bottom: 40px; }
+          :global(html[data-layout='flow']) .hero-label--bottom-right { position: absolute; right: 24px; bottom: 40px; }
         }
+
+        /* ---------------------------------------------------------- portrait
+           labels / SHAPING CONCEPTS / orb window / BUILDING EXPERIENCES /
+           labels / 01 START — one column, the orb never under the words. */
+        :global(html[data-layout='portrait']) .hero-layout {
+          display: grid; grid-template-columns: 1fr 1fr;
+          grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+          column-gap: 16px; row-gap: clamp(10px, 2.2svh, 22px);
+          padding: calc(var(--grid-block-size) + clamp(14px, 2.6svh, 28px)) 0 calc(clamp(12px, 2svh, 22px) + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='portrait']) .hero-label { white-space: normal; font-size: 11px; line-height: 1.35; letter-spacing: .01em; }
+        :global(html[data-layout='portrait']) .hero-label--top-left { grid-column: 1; grid-row: 1; }
+        :global(html[data-layout='portrait']) .hero-label--top-right { grid-column: 2; grid-row: 1; text-align: right; }
+        :global(html[data-layout='portrait']) .hero-words { font-size: clamp(30px, 10.2vw, 72px); line-height: 1.02; align-self: auto; }
+        :global(html[data-layout='portrait']) .hero-words--left { grid-column: 1 / -1; grid-row: 2; }
+        :global(html[data-layout='portrait']) .hero-orb-slot { display: block; grid-column: 1 / -1; grid-row: 3; min-height: 0; }
+        :global(html[data-layout='portrait']) .hero-words--right { grid-column: 1 / -1; grid-row: 4; align-items: flex-end; }
+        :global(html[data-layout='portrait']) .hero-label--bottom-left { grid-column: 1; grid-row: 5; gap: 4px; }
+        :global(html[data-layout='portrait']) .hero-label--bottom-right { grid-column: 2; grid-row: 5; text-align: right; align-self: end; }
+        :global(html[data-layout='portrait']) .hero-station { display: flex; grid-column: 1 / -1; grid-row: 6; }
+        :global(html[data-layout='portrait']) .hero-orb-frame { display: none; }
+        /* touch: the label links keep their look but get a 44px hit area */
+        :global(html[data-layout='portrait']) .hero-label a, :global(html[data-layout='portrait']) a.hero-label { position: relative; }
+        :global(html[data-layout='portrait']) .hero-label a::after, :global(html[data-layout='portrait']) a.hero-label::after { content: ''; position: absolute; inset: -15px -6px; }
       `}</style>
     </PinnedSection>
   );

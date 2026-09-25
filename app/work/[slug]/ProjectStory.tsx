@@ -62,8 +62,24 @@ function useSceneVariables(root: React.RefObject<HTMLElement | null>, key: strin
         if (pe > .18 && !scene.dataset.in) scene.dataset.in = 'true';
       });
     };
-    const onResize = () => { measureTracks(); dirty = true; };
+    const IMAGE_ASPECT = 1376 / 768;
+    const measureHeroFit = () => {
+      // ratio between the full-bleed cover width and a framed window as wide as the content
+      const pad = Math.min(64, Math.max(20, window.innerWidth * .034));
+      const frame = page.querySelector('[data-scene] img')?.parentElement;
+      const frameHeight = frame?.offsetHeight || window.innerHeight;
+      const coverWidth = Math.max(window.innerWidth, frameHeight * IMAGE_ASPECT);
+      page.style.setProperty('--hero-fit', ((window.innerWidth - pad * 2) / coverWidth).toFixed(4));
+    };
+    // the Next title may wrap on narrow screens; the preview stops above its real height
+    const measureNextTitle = () => {
+      const title = page.querySelector<HTMLElement>('[data-next-title]');
+      if (title) page.style.setProperty('--next-title-h', `${title.offsetHeight}px`);
+    };
+    const onResize = () => { measureTracks(); measureHeroFit(); measureNextTitle(); dirty = true; };
     measureTracks();
+    measureHeroFit();
+    measureNextTitle();
     update();
     // On the page's frame clock right after Lenis: variables are computed from
     // the scroll position of this frame, including the first frame of a gesture.
@@ -92,9 +108,12 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
   const visuals = CASE_VISUALS[project.id];
   const nextCopy = dictionary.projects[next.id];
   const index = PROJECTS.findIndex((item) => item.id === project.id);
-  const titleLines = project.title.split(' / ');
-  const nextLines = next.title.split(' / ');
+  // 1–2 letter words stay with the next word ("WB FOUNDATION" never leaves "WB" alone on a line)
+  const glue = (line: string) => line.replace(/(^|\s)(\S{1,2}) (?=\S)/g, '$1$2\u00a0');
+  const titleLines = project.title.split(' / ').map(glue);
+  const nextLines = next.title.split(' / ').map(glue);
   const statementWords = story.statement.split(' ');
+  const longestWord = (lines: string[]) => Math.max(...lines.join(' ').split(' ').map((chunk) => chunk.length));
 
   useLenis(smooth);
   useSceneVariables(pageRef, `${project.id}-${language}`);
@@ -183,7 +202,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       <div className={styles.rail} aria-hidden="true" />
 
       {/* 00 — PROJECT: full-bleed (matches the route transition), insets into a framed window */}
-      <section className={styles.hero} data-scene>
+      <section className={styles.hero} data-scene style={{ '--chars': longestWord(titleLines) } as Vars}>
         <div className={styles.heroSticky}>
           <div className={styles.heroMedia}>
             <img ref={heroImage} src={project.media.src} alt={copy.mediaAlt} />
@@ -267,6 +286,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
             <ol className={styles.bpList}>
               {story.build.map((item, i) => (
                 <li key={item.title} style={{ '--i': i } as Vars}>
+                  <span className={styles.bpCrop} style={crop(i)} aria-hidden="true"><img src={project.media.src} alt="" /><b>{String(i + 1).padStart(2, '0')}</b></span>
                   <span className={styles.bpIndex}>{String(i + 1).padStart(2, '0')}</span>
                   <h3>{item.title}</h3>
                   <p>{item.text}</p>
@@ -317,7 +337,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       </section>
 
       {/* 06 — NEXT: the route continues into the next project */}
-      <section className={styles.next} data-scene style={{ '--lines': nextLines.length } as Vars}>
+      <section className={styles.next} data-scene style={{ '--lines': nextLines.length, '--chars': longestWord(nextLines) } as Vars}>
         <div className={styles.nextSticky}>
           <a
             href={`/work/${next.id}`}
@@ -332,7 +352,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
             <span className={styles.nextNumber} aria-hidden="true">{next.number}</span>
             <span className={styles.nextRoute} aria-hidden="true"><i /></span>
             <div className={styles.nextPreview} ref={nextPreview}><img src={next.media.src} alt={nextCopy.mediaAlt} /></div>
-            <span className={styles.nextTitle}>
+            <span className={styles.nextTitle} data-next-title>
               {nextLines.map((line) => <span className={styles.line} key={line}><span>{line}</span></span>)}
             </span>
             <span className={styles.nextMeta}>{nextCopy.category}<i>↗</i></span>

@@ -320,6 +320,27 @@ img, video {
 .route-text--num { fill: var(--text-primary); }
 .route-text--coord { fill: var(--text-quaternary); letter-spacing: .1em; }
 
+/* ---------------------------------------------------------------- portrait
+   html[data-layout="portrait"]: upright phones and tablets (lib/grid.ts). */
+html[data-layout="portrait"] .pinning-container--relative {
+  height: auto;
+  min-height: 100svh;
+}
+/* route station label: the node itself is drawn by RouteMap on the line */
+html[data-layout="portrait"] .route-station {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  min-height: 16px;
+  padding-left: 16px;
+  font: 500 10px/16px var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+html[data-layout="portrait"] .route-station b { font-weight: 500; color: var(--text-primary); }
+
 .bubble-placeholder {
   position: absolute;
   pointer-events: none;

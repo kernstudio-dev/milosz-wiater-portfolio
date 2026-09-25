@@ -381,37 +381,172 @@
   .approachText { grid-column: 1 / -1; }
   .stack { grid-column: 1 / -1; margin-top: 36px; }
 }
+/* ---------------------------------------------------------- phone (portrait)
+   Same chapters, recomposed for one narrow column. The rail stays: it lives in
+   the left margin (x = pad / 2), so it costs no content width. */
+.bpCrop { display: none; }
 @media (max-width: 767px) {
-  .rail, .mark i, .nextRoute { display: none; }
-  .header { height: 62px; }
+  .page { --pad: 20px; --section-y: clamp(72px, 11svh, 104px); }
+  .header { height: calc(58px + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); }
+  .headerControls { gap: 4px; margin-right: -10px; }
+  .control, .back { min-width: 44px; min-height: 44px; justify-content: center; padding: 0 6px; }
   .back { font-size: 0; }
-  .back i { font-size: 16px; }
-  .hero { height: 150vh; }
+  .back i { font-size: 18px; }
+  .brand { display: inline-flex; align-items: center; min-height: 44px; }
+
+  /* 00 — the image zooms out until the whole interface sits in a framed window */
+  .hero { height: 170svh; }
+  .heroMedia {
+    clip-path: inset(
+      calc(var(--ps, 0) * (100svh - var(--hero-fit, .3) * 100svh) / 2)
+      calc(var(--ps, 0) * var(--pad))
+      round calc(var(--ps, 0) * var(--media-radius)));
+  }
+  /* the img box is the whole screenshot (not an object-fit crop), so scaling it
+     down lands the complete interface inside the framed window */
+  .heroMedia img {
+    position: absolute; top: 0; left: 50%; width: auto; max-width: none; height: 100%; aspect-ratio: 1376 / 768;
+    object-fit: fill; transform-origin: 50% 50%;
+    transform: translateX(-50%) scale(calc(1 + (var(--hero-fit, .3) - 1) * var(--ps, 0)));
+  }
+  .heroCorners {
+    inset:
+      calc(var(--ps, 0) * (100svh - var(--hero-fit, .3) * 100svh) / 2 - 10px)
+      calc(var(--ps, 0) * var(--pad) - 10px);
+  }
+  .heroCopy { bottom: calc(clamp(24px, 5svh, 44px) + env(safe-area-inset-bottom)); }
+  .kicker { flex-wrap: wrap; row-gap: 6px; font-size: 10px; }
   .kicker span:nth-child(2) { display: none; }
+  .heroTitle { font-size: min(calc((100vw - var(--pad) * 2) / (var(--chars, 8) * .7)), 16vw, 112px); line-height: .9; }
+  .heroTitle .line > span { white-space: normal; }
+  .subtitle { font-size: 15px; }
   .scrollCue { display: none; }
-  .statement { padding-top: 16vh; }
-  .detail { grid-column: 3 / -1; }
-  .facts { grid-template-columns: 1fr; }
-  .facts > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--border-light); }
-  .challenge { height: 200vh; }
+
+  /* 01 — label, index + category, statement, detail crop, facts */
+  .statement { padding-top: var(--section-y); }
+  .statementHead { margin-bottom: 28px; }
+  .statementAside { grid-column: 1 / -1; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; padding-top: 0; }
+  .statementIndex { font-size: clamp(48px, 16vw, 80px); }
+  .statementCategory { text-align: right; max-width: 20ch; }
+  .statementText { grid-column: 1 / -1; font-size: clamp(24px, 7.2vw, 40px); line-height: 1.14; }
+  .detail { grid-column: 4 / -1; margin: 36px 0 0; }
+  .facts { grid-template-columns: 1fr; margin-top: 44px; }
+  .facts > div, .facts > div + div { padding: 18px 0 20px; border-left: 0; }
+  .facts > div + div { border-top: 1px solid var(--border-light); }
+  .facts dd { margin-top: 10px; font-size: 15px; }
+
+  /* 02 — mark, statement, copy over a gentle crop (no desktop zoom: it would blur) */
+  .challenge { height: 190svh; }
+  .challengeCopy { grid-template-columns: 1fr; row-gap: 0; }
+  .challengeCopy h2 { margin-top: 20px; font-size: clamp(32px, 9.6vw, 52px); }
+  .challengeCopy p { max-width: none; margin-top: 22px; padding-top: 18px; font-size: 15px; }
+  .challengeMedia img { transform: scale(calc(1.18 - var(--ps, 0) * .18)); }
+  .challengeMedia::after { background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.75)); }
+
+  /* 03 — the map, then every build point as its own numbered detail crop */
   .system { height: auto; --zf: 0; }
-  .systemSticky { position: relative; height: auto; padding: 14vh var(--pad); }
-  .systemBody { grid-template-columns: 1fr; row-gap: 32px; }
+  .systemSticky { position: relative; height: auto; padding: var(--section-y) var(--pad) 32px; gap: 24px; }
+  .systemCount { font-size: 30px; }
+  .systemBody { grid-template-columns: 1fr; row-gap: 28px; }
   .blueprint, .bpList { grid-column: 1 / -1; }
-  .bpList li { opacity: 1; }
-  .bpList p { display: block; }
-  .bpMarker { --on: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; }
+  .blueprint { padding: 12px 0 0 12px; }
+  .bpFrame { max-height: none; }
+  .bpRulerX { left: 12px; height: 8px; }
+  .bpRulerY { top: 12px; width: 8px; }
+  .bpMarker { --on: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; font-size: 9px; }
+  .bpList li { opacity: 1; grid-template-columns: 34px 1fr; grid-template-rows: auto auto auto; padding: 22px 0; }
+  .bpList li > .bpCrop { grid-row: 1; }
+  .bpList li > .bpIndex { grid-row: 2 / 4; grid-column: 1; }
+  .bpList li > h3 { grid-row: 2; grid-column: 2; }
+  .bpList li > p { grid-row: 3; grid-column: 2; }
+  .bpList p { display: block; font-size: 14px; }
+  .bpCrop {
+    display: block; position: relative; grid-column: 1 / -1; margin-bottom: 16px;
+    aspect-ratio: 16 / 9; overflow: hidden; background: #0b0b0c; border-radius: var(--media-radius);
+    box-shadow: 0 0 0 1px var(--media-border);
+  }
+  .bpCrop img { width: 100%; height: 100%; object-fit: cover; object-position: var(--cx) var(--cy); transform-origin: var(--cx) var(--cy); transform: scale(calc(var(--zoom) * .9)); }
+  .bpCrop b {
+    position: absolute; left: 10px; top: 10px; width: 28px; height: 28px; display: grid; place-items: center;
+    border-radius: var(--marker-radius); background: #fff; color: #141414; font: 600 10px/1 var(--font-mono);
+  }
   .buildRail { display: none; }
-  .approach { padding: 14vh var(--pad); }
+
+  /* 04 — type spread in one column */
+  .approach { padding: 40px var(--pad) var(--section-y); }
+  .approachTitle { max-width: none; margin-top: 24px; font-size: clamp(36px, 11vw, 60px); line-height: 1; }
+  .approachGrid { margin-top: 36px; }
+  .approachAside { grid-column: 1 / -1; margin-bottom: 18px; }
+  .approachText { grid-column: 1 / -1; font-size: 16px; }
+  .stack { grid-column: 1 / -1; margin-top: 30px; }
+
+  /* 05 — the framed product, the closing card overlapping its foot */
   .result { height: auto; }
-  .resultSticky { position: relative; height: auto; padding: 12vh var(--pad); overflow: visible; }
+  .resultSticky { position: relative; height: auto; padding: 56px var(--pad) 40px; overflow: visible; }
   .resultStage { clip-path: none; }
-  .browser { position: relative; right: auto; top: auto; width: 100%; transform: none; }
-  .resultCard { position: relative; left: auto; bottom: auto; width: auto; margin-top: -28px; margin-inline: 14px; clip-path: none; }
-  .next { height: 180vh; --preview-left: var(--pad); --preview-top: calc(190px + (1 - var(--ps, 0)) * 6vh); }
-  .nextNumber { font-size: 120px; top: 132px; left: auto; right: var(--pad); }
-  .nextCount { display: none; }
+  .browser { position: relative; right: auto; top: auto; width: 100%; transform: none; border-radius: calc(var(--media-radius) + 6px); }
+  .browserBar { height: 24px; gap: 5px; padding: 0 10px; }
+  .browserBar i { width: 7px; height: 7px; }
+  .browserBar span { display: none; }
+  .resultCard { position: relative; left: auto; bottom: auto; width: auto; margin: -24px 12px 0; padding: 18px 20px 20px; clip-path: none; }
+  .resultCard p { font-size: clamp(20px, 6vw, 28px); }
+
+  /* 06 — mark + count / outlined number / preview / title / category / foot */
+  .next {
+    height: 170svh; margin-top: 0;
+    --title-size: min(calc((100vw - var(--pad) * 2) / (var(--chars, 8) * .7)), 13vw, 84px);
+    --title-band: calc(var(--next-title-h, calc(var(--lines, 1) * var(--title-size) * .92)) + 104px + env(safe-area-inset-bottom));
+    --preview-left: var(--pad);
+    --preview-top: calc(96px + 26vw + (1 - var(--ps, 0)) * 5svh);
+  }
+  .nextHead, .nextCount { top: 88px; }
+  .nextCount { display: block; font-size: 10px; }
+  .nextNumber { top: 112px; left: calc(var(--pad) - .04em); right: auto; font-size: 30vw; }
+  .nextPreview { right: var(--pad) !important; inset: var(--preview-top) var(--pad) var(--preview-bottom) var(--pad); }
+  .nextTitle { bottom: calc(76px + env(safe-area-inset-bottom)); line-height: .92; }
+  .nextTitle .line > span { white-space: normal; }
+  .nextMeta { left: var(--pad); right: var(--pad); top: auto; bottom: calc(48px + env(safe-area-inset-bottom)); gap: 10px; font-size: 10px; }
+  .nextMeta i { font-size: 16px; margin-left: auto; }
+  .nextFoot { bottom: calc(18px + env(safe-area-inset-bottom)); font-size: 10px; }
+  .nextFoot a { display: inline-flex; align-items: center; min-height: 44px; margin: -14px 0; }
+  .nextRoute { width: calc(var(--pad) * .5 + 1px); }
 }
+/* upright tablets keep the desktop chapters, but take the portrait versions
+   of the three image-led scenes (full-bleed crops of a 16:9 interface do not
+   work on a tall screen) */
+@media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+  .heroMedia {
+    clip-path: inset(
+      calc(var(--ps, 0) * (100svh - var(--hero-fit, .3) * 100svh) / 2)
+      calc(var(--ps, 0) * var(--pad))
+      round calc(var(--ps, 0) * var(--media-radius)));
+  }
+  .heroMedia img {
+    position: absolute; top: 0; left: 50%; width: auto; max-width: none; height: 100%; aspect-ratio: 1376 / 768;
+    object-fit: fill; transform-origin: 50% 50%;
+    transform: translateX(-50%) scale(calc(1 + (var(--hero-fit, .3) - 1) * var(--ps, 0)));
+  }
+  .heroCorners {
+    inset:
+      calc(var(--ps, 0) * (100svh - var(--hero-fit, .3) * 100svh) / 2 - 12px)
+      calc(var(--ps, 0) * var(--pad) - 12px);
+  }
+  .challengeMedia img { transform: scale(calc(1.18 - var(--ps, 0) * .18)); }
+  .next {
+    --title-size: min(calc((100vw - var(--pad) * 2) / (var(--chars, 8) * .7)), 11vw, 104px);
+    --title-band: calc(var(--next-title-h, calc(var(--lines, 1) * var(--title-size) * .92)) + 120px);
+    --preview-left: var(--pad);
+    --preview-top: calc(120px + 22vw + (1 - var(--ps, 0)) * 5svh);
+  }
+  .nextNumber { top: 136px; font-size: 26vw; }
+  .nextPreview { inset: var(--preview-top) var(--pad) var(--preview-bottom) var(--pad); }
+  .nextTitle { bottom: 84px; }
+  .nextTitle .line > span { white-space: normal; }
+  .nextMeta { left: var(--pad); right: var(--pad); top: auto; bottom: 52px; }
+  .nextMeta i { margin-left: auto; }
+  .nextRoute { width: calc(var(--pad) * .5 + 1px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .system { --zf: 0; }
   .heroMedia, .challengeMedia, .resultStage { clip-path: none !important; }

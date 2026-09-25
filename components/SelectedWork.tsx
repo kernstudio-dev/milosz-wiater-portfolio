@@ -42,6 +42,7 @@ export function SelectedWork() {
   const isManual = manualProgress.current !== null;
   const railPosition = isManual ? activeIndex : raw;
   const railRef = useRef<HTMLElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const railTarget = useRef(railPosition);
   railTarget.current = railPosition;
 
@@ -84,6 +85,15 @@ export function SelectedWork() {
   useEffect(() => setWorkProjectColor(COLORS[activeIndex]), [activeIndex, setWorkProjectColor]);
   useEffect(() => { prefetch(`/work/${PROJECTS[activeIndex].id}`); }, [activeIndex, prefetch]);
   useEffect(() => () => { if (projectTimer.current) clearTimeout(projectTimer.current); }, []);
+
+  // Portrait: the thumbnail strip scrolls sideways; keep the active one in view.
+  useEffect(() => {
+    if (document.documentElement.dataset.layout !== 'portrait') return;
+    const strip = stripRef.current;
+    const thumb = strip?.querySelectorAll('button')[activeIndex] as HTMLElement | undefined;
+    if (!strip || !thumb) return;
+    strip.scrollTo({ left: thumb.offsetLeft - (strip.clientWidth - thumb.offsetWidth) / 2, behavior: 'smooth' });
+  }, [activeIndex]);
 
   // The scrubber indicator has exactly one writer: this follower. Scroll and
   // manual selection only set its target. Rate 9.9/s matches the decay of the
@@ -204,13 +214,14 @@ export function SelectedWork() {
           </div>
 
           <a className="work-open" href={href} onClick={open} style={{ opacity: scrub }}>
-            <span>{dictionary.caseStudy.caseStudy}</span>
+            <span className="open-desktop">{dictionary.caseStudy.caseStudy}</span>
+            <span className="open-portrait">{dictionary.work.view} {dictionary.caseStudy.project}</span>
             <i aria-hidden="true">↗</i>
           </a>
         </aside>
 
         {/* Scrubber — thumbnails + continuous scroll indicator. */}
-        <div className="work-scrubber" style={{ clipPath: `inset(0 ${(1 - scrub) * 100}% 0 0)`, opacity: 1 - leave }} aria-label={dictionary.work.selectProject}>
+        <div ref={stripRef} className="work-scrubber" style={{ clipPath: `inset(0 ${(1 - scrub) * 100}% 0 0)`, opacity: 1 - leave }} aria-label={dictionary.work.selectProject}>
           <div className="scrub-track">
             {PROJECTS.map((item, itemIndex) => (
               <button
@@ -228,6 +239,10 @@ export function SelectedWork() {
             <i ref={railRef} className="scrub-indicator" aria-hidden="true" />
           </div>
         </div>
+
+        {/* portrait only: the orb's window beside the heading, and the route station */}
+        <div className="work-orb-slot" data-orb-slot aria-hidden="true" />
+        <p className="route-station work-station" data-route-station><b>02</b> / {dictionary.route.work}</p>
 
         <div className="work-controls" style={{ clipPath: `inset(0 0 0 ${(1 - scrub) * 100}%)`, opacity: 1 - leave }}>
           <button type="button" onClick={() => selectProject(activeIndex - 1)} aria-label={dictionary.work.previous}><span>←</span></button>
@@ -335,17 +350,70 @@ export function SelectedWork() {
           .work-open { height: calc(var(--grid-block-size) * .8); }
         }
         @media (max-width: 767px) {
-          .work-layout { display: flex; flex-direction: column; padding: 100px 20px 30px; gap: 16px; }
-          .work-heading { order: 0; }
-          .work-cta { position: absolute; right: 20px; top: 34px; padding: 12px 16px; }
-          .work-viewport { order: 1; aspect-ratio: 16 / 10; clip-path: none !important; }
-          .work-scrubber { order: 2; height: 64px; padding: 0; }
-          .work-controls { order: 3; height: 52px; }
-          .work-info { order: 4; padding: 0; transform: none !important; }
-          .work-index { font-size: 44px; }
-          .work-copy { margin-top: 12px; }
-          .work-open { height: 56px; }
+          :global(html[data-layout='flow']) .work-layout { display: flex; flex-direction: column; padding: 100px 20px 30px; gap: 16px; }
+          :global(html[data-layout='flow']) .work-heading { order: 0; }
+          :global(html[data-layout='flow']) .work-cta { position: absolute; right: 20px; top: 34px; padding: 12px 16px; }
+          :global(html[data-layout='flow']) .work-viewport { order: 1; aspect-ratio: 16 / 10; clip-path: none !important; }
+          :global(html[data-layout='flow']) .work-scrubber { order: 2; height: 64px; padding: 0; }
+          :global(html[data-layout='flow']) .work-controls { order: 3; height: 52px; }
+          :global(html[data-layout='flow']) .work-info { order: 4; padding: 0; transform: none !important; }
+          :global(html[data-layout='flow']) .work-index { font-size: 44px; }
+          :global(html[data-layout='flow']) .work-copy { margin-top: 12px; }
+          :global(html[data-layout='flow']) .work-open { height: 56px; }
         }
+        .work-orb-slot, .work-station, .open-portrait { display: none; }
+
+        /* ---------------------------------------------------------- portrait
+           heading + index | orb window / dominant media / swipe strip /
+           title / copy / ← → VIEW PROJECT / 02 station */
+        :global(html[data-layout='portrait']) .work-layout {
+          display: grid; grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+          grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto auto;
+          row-gap: clamp(8px, 1.5svh, 14px);
+          padding: calc(var(--grid-block-size) + clamp(12px, 2.4svh, 26px)) 0 calc(clamp(12px, 2svh, 20px) + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='portrait']) .work-heading { grid-column: 1 / -3; grid-row: 1; align-self: start; padding: 0; }
+        :global(html[data-layout='portrait']) .work-heading h2 { font-size: clamp(26px, 8.2vw, 46px); line-height: 1; }
+        :global(html[data-layout='portrait']) .work-heading p { display: none; }
+        :global(html[data-layout='portrait']) .work-cta { display: none; }
+        :global(html[data-layout='portrait']) .work-orb-slot { display: block; grid-column: -3 / -1; grid-row: 1 / 3; min-height: calc(var(--grid-block-size) * 2); }
+        :global(html[data-layout='portrait']) .work-info { display: contents; }
+        :global(html[data-layout='portrait']) .work-index { grid-column: 1 / -3; grid-row: 2; align-self: end; font-size: clamp(30px, 9vw, 52px); }
+        :global(html[data-layout='portrait']) .work-viewport { grid-column: 1 / -1; grid-row: 3; aspect-ratio: 16 / 10; }
+        :global(html[data-layout='portrait']) .work-scrubber {
+          grid-column: 1 / -1; grid-row: 4; padding: 0 0 8px; height: auto;
+          overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+        }
+        :global(html[data-layout='portrait']) .work-scrubber::-webkit-scrollbar { display: none; }
+        :global(html[data-layout='portrait']) .scrub-track { display: flex; gap: 0; width: max-content; height: calc(var(--grid-block-size) * .92); }
+        :global(html[data-layout='portrait']) .scrub-track button { flex: 0 0 calc(var(--grid-block-size) * 1.62); padding-right: 6px; background: none; scroll-snap-align: start; }
+        :global(html[data-layout='portrait']) .scrub-track img { background: #0b0b0c; }
+        :global(html[data-layout='portrait']) .scrub-track span { left: 6px; bottom: 5px; }
+        :global(html[data-layout='portrait']) .scrub-indicator {
+          width: calc(var(--grid-block-size) * 1.62); margin: 0; bottom: -7px;
+          background: linear-gradient(90deg, var(--text-primary) calc(100% - 6px), transparent 0);
+        }
+        :global(html[data-layout='portrait']) .work-title-stage { grid-column: 1 / -1; grid-row: 5; margin: 0; min-height: 0; font-size: clamp(22px, 6.8vw, 40px); }
+        :global(html[data-layout='portrait']) .work-copy { grid-column: 1 / -1; grid-row: 6; margin: 0; min-height: 0; overflow: hidden; }
+        :global(html[data-layout='portrait']) .work-copy p { -webkit-line-clamp: 3; font-size: 14px; }
+        :global(html[data-layout='portrait']) .work-copy ul { margin-top: 10px; }
+        :global(html[data-layout='portrait']) .work-controls { grid-column: 1 / 3; grid-row: 7; height: max(48px, calc(var(--grid-block-size) * .86)); }
+        :global(html[data-layout='portrait']) .work-open { grid-column: 3 / -1; grid-row: 7; margin: 0; height: max(48px, calc(var(--grid-block-size) * .86)); border-left: 0; font-size: 11px; }
+        :global(html[data-layout='portrait']) .open-desktop { display: none; }
+        :global(html[data-layout='portrait']) .open-portrait { display: inline; }
+        :global(html[data-layout='portrait']) .work-station { display: flex; grid-column: 1 / -1; grid-row: 8; }
+        @media (max-height: 700px) {
+          :global(html[data-layout='portrait']) .work-viewport { aspect-ratio: 16 / 9; }
+          :global(html[data-layout='portrait']) .work-copy { display: none; }
+        }
+        @media (min-width: 400px) {
+          :global(html[data-layout='portrait']) .work-heading, :global(html[data-layout='portrait']) .work-index { grid-column: 1 / -4; }
+          :global(html[data-layout='portrait']) .work-orb-slot { grid-column: -4 / -1; }
+        }
+        @media (min-height: 780px) {
+          :global(html[data-layout='portrait']) .work-heading p { display: block; margin-top: 8px; font-size: 13px; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .media-layer, .media-layer img, .roll *, .work-title *, .copy-in, .cap-in { animation: none !important; }
         }

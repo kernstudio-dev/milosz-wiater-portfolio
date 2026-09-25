@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useTheme } from '@/context/ThemeContext';
 import { useBubble } from '@/context/BubbleContext';
 import { getLiveScroll } from '@/context/ScrollContext';
+import { frameTop, getPortraitSections, SECTION_ORDER, type PortraitSection } from '@/lib/portraitGeometry';
 import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 import { bubbleVertexShader, bubbleFragmentShader } from '@/components/bubble/shaders';
 import { sampleOrbTravel } from '@/lib/orbMotion';
@@ -38,6 +39,33 @@ const smooth = (t: number) => {
 function productionScale(blockSize: number, viewportHeight: number) {
   const visibleHeight = 2 * Math.tan((CAMERA_FOV * Math.PI) / 360) * CAMERA_DISTANCE;
   return Math.max(0.36, Math.min(1.35, (2.35 * blockSize) / ((viewportHeight / visibleHeight) * 2)));
+}
+
+/** Orb radius as a fraction of its portrait window's shorter side. */
+const PORTRAIT_RADIUS = .3;
+
+/**
+ * Portrait orb target: the window of the scene on screen; while the next
+ * scene scrolls in (its top travelling from the bottom of the viewport to the
+ * top), blend from the outgoing window to the incoming one.
+ */
+function portraitTarget(scrollY: number, viewportHeight: number) {
+  const registry = getPortraitSections();
+  const list = SECTION_ORDER.map((id) => registry[id]).filter((s): s is PortraitSection => Boolean(s?.hole));
+  if (!list.length) return null;
+  const at = (s: PortraitSection) => {
+    const hole = s.hole!;
+    return { x: hole.x + hole.w / 2, y: frameTop(s, scrollY) + hole.y + hole.h / 2, size: Math.min(hole.w, hole.h) };
+  };
+  const next = list.findIndex((s) => s.top - scrollY > 0);
+  if (next === -1) return at(list[list.length - 1]);
+  if (next === 0) return at(list[0]);
+  const incomingTop = list[next].top - scrollY;
+  if (incomingTop >= viewportHeight) return at(list[next - 1]);
+  const w = smooth((1 - incomingTop / viewportHeight - .15) / .7);
+  const a = at(list[next - 1]);
+  const b = at(list[next]);
+  return { x: lerp(a.x, b.x, w), y: lerp(a.y, b.y, w), size: lerp(a.size, b.size, w) };
 }
 
 function seededRandom(index: number, salt: number) {
@@ -246,11 +274,21 @@ export function BubbleScene() {
       const workX = width < 768 ? width / 2 : xOffset + bs * 1.55;
       const rightX = width < 768 ? width / 2 : xOffset + bs * (sectionCols - 3);
       const travel = sampleOrbTravel(globalProgress, travelState);
-      const x = travel.anchor < 0 ? lerp(centerX, workX, -travel.anchor) : lerp(centerX, rightX, travel.anchor);
-      const y = height < 700 ? height * 0.5 : bs * travel.row;
-      const scale = productionScale(bs, height) * travel.scale;
       const visibleHeight = 2 * Math.tan((CAMERA_FOV * Math.PI) / 360) * CAMERA_DISTANCE;
       const worldPerPixel = visibleHeight / height;
+      let x = travel.anchor < 0 ? lerp(centerX, workX, -travel.anchor) : lerp(centerX, rightX, travel.anchor);
+      let y = height < 700 ? height * 0.5 : bs * travel.row;
+      let scale = productionScale(bs, height) * travel.scale;
+      // Portrait: the orb lives in each scene's measured window (position and
+      // size only — shape, shader and personality are unchanged).
+      if (gridMetrics?.layout === 'portrait') {
+        const target = portraitTarget(getLiveScroll().scrollY, height);
+        if (target) {
+          x = target.x;
+          y = target.y;
+          scale = (target.size * PORTRAIT_RADIUS * worldPerPixel) / BASE_RADIUS;
+        }
+      }
       const worldX = (x - width / 2) * worldPerPixel;
       const worldY = -(y - height / 2) * worldPerPixel;
       travelGroup.position.set(worldX, worldY, 0);

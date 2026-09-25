@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
 import { useLanguage } from '@/context/LanguageContext';
 import { useScene } from '@/hooks/useScene';
+import { useBubble } from '@/context/BubbleContext';
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
@@ -12,11 +13,18 @@ export function ContactFooter() {
   const [sent, setSent] = useState(false);
   const { dictionary } = useLanguage();
   const { enter } = useScene('footer');
-  const reveal = (delay: number) => smooth((enter - .45 - delay) / .32);
+  const { gridMetrics } = useBubble();
+  // Portrait: the closing scene is ordinary flow as tall as its content, so a
+  // reveal tied to section progress would keep visible blocks hidden.
+  const portrait = gridMetrics?.layout === 'portrait';
+  const reveal = (delay: number) => (portrait ? 1 : smooth((enter - .45 - delay) / .32));
 
   return (
     <PinnedSection id="footer" pinned={false}>
       <div className="footer-layout">
+        {/* portrait only: the last orb window and the route's END */}
+        <div className="footer-orb-slot" data-orb-slot aria-hidden="true" />
+        <p className="route-station footer-station" data-route-station><b>05</b> / {dictionary.route.contact} <em>● {dictionary.route.end}</em></p>
         <div className="footer-contact" style={{ clipPath: `inset(0 0 ${(1 - reveal(0)) * 100}% 0)` }}>
           <h2>{dictionary.contact.contact}</h2>
           <a href="mailto:contact@kern.dev">contact@kern.dev</a>
@@ -70,11 +78,35 @@ export function ContactFooter() {
           .footer-form-wrap { grid-column: -7 / -1; }
         }
         @media (max-width: 767px) {
-          .footer-layout { display: block; padding: 100px 20px 30px; overflow: auto; }
-          .footer-contact, .footer-info, .footer-form-wrap { margin-bottom: 18px; min-height: 190px; }
-          .footer-form-wrap { min-height: 520px; }
-          .footer-legal { height: 74px; }
+          :global(html[data-layout='flow']) .footer-layout { display: block; padding: 100px 20px 30px; overflow: auto; }
+          :global(html[data-layout='flow']) .footer-contact, :global(html[data-layout='flow']) .footer-info, :global(html[data-layout='flow']) .footer-form-wrap { margin-bottom: 18px; min-height: 190px; }
+          :global(html[data-layout='flow']) .footer-form-wrap { min-height: 520px; }
+          :global(html[data-layout='flow']) .footer-legal { height: 74px; }
         }
+        .footer-orb-slot, .footer-station { display: none; }
+
+        /* ---------------------------------------------------------- portrait
+           the route comes down the left edge and turns into the END node under
+           the last orb window; contact, form and information follow in flow. */
+        :global(html[data-layout='portrait']) .footer-layout {
+          display: grid; grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; height: auto; overflow: visible;
+          row-gap: 14px;
+          padding: calc(var(--grid-block-size) + clamp(16px, 3svh, 32px)) 0 calc(28px + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='portrait']) .footer-orb-slot { display: block; grid-column: 2 / -2; aspect-ratio: 1; max-height: 42svh; justify-self: center; width: 100%; }
+        :global(html[data-layout='portrait']) .footer-station { display: block; grid-column: 1 / -1; height: auto; padding: 14px 0 0 16px; margin-bottom: 10px; }
+        :global(html[data-layout='portrait']) .footer-station em { font-style: normal; margin-left: 1em; color: var(--text-primary); }
+        :global(html[data-layout='portrait']) .footer-contact, :global(html[data-layout='portrait']) .footer-info, :global(html[data-layout='portrait']) .footer-form-wrap, :global(html[data-layout='portrait']) .footer-legal { grid-column: 1 / -1; grid-row: auto; }
+        :global(html[data-layout='portrait']) .footer-contact, :global(html[data-layout='portrait']) .footer-info { padding: 20px; gap: 12px; }
+        :global(html[data-layout='portrait']) .footer-form-wrap { padding-top: 20px; }
+        :global(html[data-layout='portrait']) .footer-form-wrap h2 { padding: 0 16px 16px; }
+        :global(html[data-layout='portrait']) form { height: auto; grid-template-rows: none; }
+        :global(html[data-layout='portrait']) input { height: max(52px, calc(var(--grid-block-size) * .92)); padding: 0 16px; }
+        :global(html[data-layout='portrait']) textarea { min-height: 132px; padding: 16px; }
+        :global(html[data-layout='portrait']) button { height: max(52px, calc(var(--grid-block-size) * .92)); }
+        :global(html[data-layout='portrait']) .footer-legal { height: max(52px, calc(var(--grid-block-size) * .92)); }
+        :global(html[data-layout='portrait']) .footer-legal span { padding: 0 14px; font-size: 12px; }
+        :global(html[data-layout='portrait']) .footer-contact a { padding: 12px 0; margin: -12px 0; }
       `}</style>
     </PinnedSection>
   );

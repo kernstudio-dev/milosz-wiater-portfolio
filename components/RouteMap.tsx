@@ -55,10 +55,67 @@ interface RouteMapProps {
   enter: number;
   /** window progress of the handoff out of this scene (0 when settled) */
   leave: number;
+  /** portrait layout: measured station position + frame height */
+  portrait?: { stationY: number | null; frame: number } | null;
 }
 
-export function RouteMap({ id, metrics, hole, enter, leave }: RouteMapProps) {
+/**
+ * Portrait: the route runs down the left content edge. Portrait frames do not
+ * overlap — each frame's bottom edge meets the next frame's top edge — so a
+ * line at the same x in every frame is one continuous line down the page.
+ * Station labels are HTML in each scene ([data-route-station]); this layer
+ * only draws the line and the nodes.
+ */
+function PortraitRoute({ id, metrics, hole, portrait }: { id: SectionId; metrics: GridMetrics; hole: PlaceholderRect | null; portrait: { stationY: number | null; frame: number } }) {
+  const { xOffset } = metrics;
+  const width = typeof window !== 'undefined' ? window.innerWidth : xOffset * 2 + metrics.sectionCols * metrics.blockSize;
+  const height = portrait.frame;
+  const x = Math.round(xOffset) + .5;
+  const sy = portrait.stationY;
+  const maskId = `route-mask-p-${id}`;
+  const end = id === 'footer';
+  const endX = hole ? Math.round(xOffset + hole.x + hole.width / 2) + .5 : Math.round(width / 2) + .5;
+
+  let d = '';
+  if (id === 'hero') d = sy !== null ? `M${x} ${sy} V${height}` : '';
+  else if (end) d = sy !== null ? `M${x} 0 V${sy} H${endX}` : `M${x} 0 V${height}`;
+  else d = `M${x} 0 V${height}`;
+
+  return (
+    <svg className="route-map" viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="true">
+      {hole && (
+        <defs>
+          <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height}>
+            <rect width={width} height={height} fill="#fff" />
+            <rect x={xOffset + hole.x} y={hole.y} width={hole.width} height={hole.height} fill="#000" />
+          </mask>
+        </defs>
+      )}
+      <g mask={hole ? `url(#${maskId})` : undefined}>
+        {d && <path d={d} className="route-line" />}
+      </g>
+      {sy !== null && !end && (
+        <g>
+          <rect x={x - 4.5} y={sy - 4.5} width={9} height={9} className="route-node" />
+          <rect x={x - 1.5} y={sy - 1.5} width={3} height={3} className="route-node-core" />
+        </g>
+      )}
+      {sy !== null && end && (
+        <g>
+          <rect x={x - 3} y={sy - 3} width={6} height={6} className="route-node" />
+          <rect x={endX - 6} y={sy - 6} width={12} height={12} className="route-node route-node--end" />
+          <rect x={endX - 2} y={sy - 2} width={4} height={4} className="route-node-core route-node-core--end" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+export function RouteMap({ id, metrics, hole, enter, leave, portrait }: RouteMapProps) {
   const { dictionary } = useLanguage();
+  if (metrics.layout === 'portrait') {
+    return portrait ? <PortraitRoute id={id} metrics={metrics} hole={hole} portrait={portrait} /> : null;
+  }
   if (!metrics.isPinned) return null;
 
   const { blockSize: bs, sectionCols: cols, xOffset } = metrics;

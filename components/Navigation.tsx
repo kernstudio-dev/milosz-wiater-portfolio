@@ -46,12 +46,15 @@ export function Navigation() {
         .nav-overlay nav span { display: inline-block; width: 50px; font: 11px/1 var(--font-mono); color: var(--text-tertiary); }
         .nav-overlay p { position: absolute; bottom: 40px; font: 11px/1 var(--font-mono); color: var(--text-tertiary); letter-spacing: .12em; }
         @media (max-width: 767px) {
-          .site-nav__inner { width: calc(100% - 32px); display: flex; }
-          .brand { width: 120px; }
-          .menu { width: var(--header-height); }
-          .language { margin-left: auto; width: var(--header-height); }
-          .theme { width: var(--header-height); }
+          :global(html[data-layout='flow']) .site-nav__inner { width: calc(100% - 32px); display: flex; }
+          :global(html[data-layout='flow']) .brand { width: 120px; }
+          :global(html[data-layout='flow']) .menu { width: var(--header-height); }
+          :global(html[data-layout='flow']) .language { margin-left: auto; width: var(--header-height); }
+          :global(html[data-layout='flow']) .theme { width: var(--header-height); }
         }
+        :global(html[data-layout='portrait']) .site-nav { padding-top: env(safe-area-inset-top); height: calc(var(--header-height) + env(safe-area-inset-top)); }
+        :global(html[data-layout='portrait']) .nav-overlay nav button { font-size: clamp(38px, 11vw, 72px); padding: 6px 0; }
+        :global(html[data-layout='portrait']) .nav-overlay p { bottom: calc(28px + env(safe-area-inset-bottom)); }
       `}</style>
     </>
   );

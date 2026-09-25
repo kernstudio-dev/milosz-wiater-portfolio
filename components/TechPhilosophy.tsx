@@ -26,6 +26,7 @@ export function TechPhilosophy() {
         </div>
         <a href="#footer" className="about-cta" style={{ clipPath: `inset(0 0 0 ${(1 - heading) * 100}%)` }}>{dictionary.about.cta}</a>
         <p className="about-copy" style={{ clipPath: `inset(0 ${(1 - copy) * 100}% 0 0)` }}>{dictionary.about.copy}</p>
+        <div className="about-orb-slot" data-orb-slot aria-hidden="true" />
         <div className="about-portrait" style={{ clipPath: `inset(${(1 - enter) * 100}% 0 0 0)` }}>
           <img src="/images/milosz_portrait.jpg" alt={dictionary.about.portraitAlt} />
         </div>
@@ -35,6 +36,7 @@ export function TechPhilosophy() {
           </div>
           <small>translateX: {Math.round(ticker)}px</small>
         </div>
+        <p className="route-station about-station" data-route-station><b>04</b> / {dictionary.route.about}</p>
       </div>
 
       <style jsx>{`
@@ -57,11 +59,35 @@ export function TechPhilosophy() {
           .about-portrait { grid-column: -8 / -1; }
         }
         @media (max-width: 767px) {
-          .about-layout { display: block; padding: 110px 20px 30px; }
-          .about-cta { position: absolute; top: 34px; right: 20px; padding: 12px; }
-          .about-copy { margin-top: 28px; padding: 30px 20px; min-height: 220px; }
-          .about-portrait { margin: 18px 0; height: 42vh; }
-          .about-ticker { height: 90px; }
+          :global(html[data-layout='flow']) .about-layout { display: block; padding: 110px 20px 30px; }
+          :global(html[data-layout='flow']) .about-cta { position: absolute; top: 34px; right: 20px; padding: 12px; }
+          :global(html[data-layout='flow']) .about-copy { margin-top: 28px; padding: 30px 20px; min-height: 220px; }
+          :global(html[data-layout='flow']) .about-portrait { margin: 18px 0; height: 42vh; }
+          :global(html[data-layout='flow']) .about-ticker { height: 90px; }
+        }
+        .about-orb-slot, .about-station { display: none; }
+
+        /* ---------------------------------------------------------- portrait
+           ABOUT / statement / orb window | portrait / stack / 04 station */
+        :global(html[data-layout='portrait']) .about-layout {
+          display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+          row-gap: clamp(10px, 1.8svh, 18px);
+          padding: calc(var(--grid-block-size) + clamp(12px, 2.4svh, 26px)) 0 calc(clamp(12px, 2svh, 20px) + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='portrait']) .about-heading { grid-column: 1 / -1; grid-row: 1; }
+        :global(html[data-layout='portrait']) .about-heading h2 { font-size: clamp(28px, 8.2vw, 46px); }
+        :global(html[data-layout='portrait']) .about-heading p { font-size: 12px; margin-top: 6px; }
+        :global(html[data-layout='portrait']) .about-cta { display: none; }
+        :global(html[data-layout='portrait']) .about-copy { grid-column: 1 / -1; grid-row: 2; padding: clamp(14px, 4vw, 24px); font-size: clamp(16px, 4.7vw, 24px); line-height: 1.32; }
+        :global(html[data-layout='portrait']) .about-orb-slot { display: block; grid-column: 1; grid-row: 3; min-height: 0; }
+        :global(html[data-layout='portrait']) .about-portrait { grid-column: 2; grid-row: 3; margin: 0; min-height: 0; }
+        :global(html[data-layout='portrait']) .about-ticker { grid-column: 1 / -1; grid-row: 4; height: max(44px, calc(var(--grid-block-size) * .8)); }
+        :global(html[data-layout='portrait']) .about-ticker > div { gap: 36px; }
+        :global(html[data-layout='portrait']) .about-ticker span { font-size: 12px; }
+        :global(html[data-layout='portrait']) .about-ticker small { display: none; }
+        :global(html[data-layout='portrait']) .about-station { display: flex; grid-column: 1 / -1; grid-row: 5; }
+        @media (max-height: 620px) {
+          :global(html[data-layout='portrait']) .about-copy { font-size: 15px; padding: 12px 14px; }
         }
       `}</style>
     </PinnedSection>

@@ -205,7 +205,7 @@ export function ServicesIndex() {
           <div className="services-timer"><i ref={timerRef} /></div>
         </section>
 
-        <div className="services-orb-stage" aria-hidden="true" style={{ opacity: listReveal }}>
+        <div className="services-orb-stage" data-orb-slot aria-hidden="true" style={{ opacity: listReveal }}>
           <span className="stage-label">{dictionary.services.form} / {number(displayed)}</span>
         </div>
 
@@ -232,6 +232,8 @@ export function ServicesIndex() {
             </button>
           ))}
         </nav>
+
+        <p className="route-station services-station" data-route-station><b>03</b> / {dictionary.route.services}</p>
 
         <div className="services-scope" style={{ clipPath: `inset(0 ${(1 - listReveal) * 100}% 0 0)` }}>
           <span className="services-scope-label">{dictionary.services.focus}</span>
@@ -323,15 +325,52 @@ export function ServicesIndex() {
           .services-panel p { margin-top: 14px; font-size: 13px; }
         }
         @media (max-width: 767px) {
-          .services-layout { display: block; padding: 100px 20px 40px; overflow: auto; transform: none !important; }
-          .services-heading h2 { flex-direction: column; gap: 0; white-space: normal; font-size: 34px; }
-          .services-cta { position: absolute; right: 20px; top: 34px; padding: 12px; }
-          .services-panel { margin-top: 30px; min-height: 360px; padding: 22px 18px; }
-          .services-panel h3 { font-size: 40px; }
-          .services-orb-stage { height: 280px; }
-          .services-index { height: 300px; }
-          .services-scope { display: none; }
+          :global(html[data-layout='flow']) .services-layout { display: block; padding: 100px 20px 40px; overflow: auto; transform: none !important; }
+          :global(html[data-layout='flow']) .services-heading h2 { flex-direction: column; gap: 0; white-space: normal; font-size: 34px; }
+          :global(html[data-layout='flow']) .services-cta { position: absolute; right: 20px; top: 34px; padding: 12px; }
+          :global(html[data-layout='flow']) .services-panel { margin-top: 30px; min-height: 360px; padding: 22px 18px; }
+          :global(html[data-layout='flow']) .services-panel h3 { font-size: 40px; }
+          :global(html[data-layout='flow']) .services-orb-stage { height: 280px; }
+          :global(html[data-layout='flow']) .services-index { height: 300px; }
+          :global(html[data-layout='flow']) .services-scope { display: none; }
         }
+        .services-station { display: none; }
+
+        /* ---------------------------------------------------------- portrait
+           label / RELIABLE CREATIVE VERSATILE / orb window / 01 / 06 ← →
+           title / description / timer / 03 station. Same state machine. */
+        :global(html[data-layout='portrait']) .services-layout {
+          display: grid; grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto minmax(0, 1fr) auto auto;
+          row-gap: clamp(10px, 1.8svh, 18px);
+          padding: calc(var(--grid-block-size) + clamp(12px, 2.4svh, 26px)) 0 calc(clamp(12px, 2svh, 20px) + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='portrait']) .services-heading { grid-column: 1; grid-row: 1; padding: 0; }
+        :global(html[data-layout='portrait']) .services-heading p { font-size: 11px; margin-bottom: 6px; }
+        :global(html[data-layout='portrait']) .services-heading h2 { flex-wrap: wrap; column-gap: .28em; row-gap: 0; white-space: normal; font-size: clamp(24px, 7.4vw, 44px); line-height: 1.04; }
+        :global(html[data-layout='portrait']) .services-cta,
+        :global(html[data-layout='portrait']) .services-index,
+        :global(html[data-layout='portrait']) .services-scope { display: none; }
+        :global(html[data-layout='portrait']) .services-orb-stage { grid-column: 1; grid-row: 2; min-height: 0; border: 0; }
+        :global(html[data-layout='portrait']) .stage-label { display: none; }
+        :global(html[data-layout='portrait']) .services-panel { grid-column: 1; grid-row: 3; padding: clamp(14px, 4vw, 22px); }
+        :global(html[data-layout='portrait']) .services-number { font-size: clamp(30px, 9vw, 54px); }
+        :global(html[data-layout='portrait']) .services-nav { gap: 6px; }
+        :global(html[data-layout='portrait']) .services-nav button { width: 44px; height: 44px; font-size: 16px; }
+        :global(html[data-layout='portrait']) .services-copy-stage { display: grid; flex: none; margin-top: clamp(10px, 2svh, 22px); }
+        :global(html[data-layout='portrait']) .services-copy { position: relative; inset: auto; grid-area: 1 / 1; justify-content: flex-start; }
+        :global(html[data-layout='portrait']) .services-panel h3 { font-size: clamp(26px, 9vw, 52px); }
+        :global(html[data-layout='portrait']) .services-panel h3 > .mask { white-space: nowrap; }
+        :global(html[data-layout='portrait']) .services-panel h3 strong { padding: 0 8px 4px; }
+        /* fixed three-line box: every service has the same panel height, so the
+           orb window above never resizes between services */
+        :global(html[data-layout='portrait']) .services-panel p { margin-top: 12px; font-size: 14px; line-height: 1.5; height: 4.5em; overflow: hidden; }
+        :global(html[data-layout='portrait']) .services-timer { margin-top: 14px; }
+        :global(html[data-layout='portrait']) .services-station { display: flex; grid-column: 1; grid-row: 4; }
+        @media (max-height: 620px) {
+          :global(html[data-layout='portrait']) .services-panel p { height: 3em; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .services-copy *, .roll *, .scope-item { animation: none !important; }
         }
