@@ -1,236 +1,221 @@
+/*
+ * KERN orb — one point membrane, three independent motion systems.
+ *
+ *  macro   : travelGroup transform (scroll only, CPU)
+ *  ambient : uTime-driven deformation below + ambientGroup drift (time only)
+ *  pointer : world-space swell under the cursor (pointer only, damped on CPU)
+ *
+ * The membrane is a set of latitude rings (see BubbleScene#buildOrbGeometry).
+ * All shape comes from ONE radius function r(dir) with three frequency bands:
+ *   fold   – low frequency, domain-warped, owns the silhouette
+ *   ridge  – medium frequency ridged noise, travelling creases
+ *   detail – fine grain, very small
+ * Distribution modifiers (flow / ribbon / volume / shells) re-arrange the same
+ * points so each section personality reads as a different sculpture.
+ */
+
+const simplex = /* glsl */ `
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 permute(vec4 x) { return mod289(((x * 34.0) + 10.0) * x); }
+vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise(vec3 v) {
+  const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec3 i = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+  i = mod289(i);
+  vec4 p = permute(permute(permute(
+    i.z + vec4(0.0, i1.z, i2.z, 1.0))
+    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+  float n_ = 0.142857142857;
+  vec3 ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ * ns.x + ns.yyyy;
+  vec4 y = y_ * ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0) * 2.0 + 1.0;
+  vec4 s1 = floor(b1) * 2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+  vec3 p0 = vec3(a0.xy, h.x);
+  vec3 p1 = vec3(a0.zw, h.y);
+  vec3 p2 = vec3(a1.xy, h.z);
+  vec3 p3 = vec3(a1.zw, h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+}
+`;
+
 export const bubbleVertexShader = /* glsl */ `
 uniform float uTime;
-uniform float uShape;
-uniform float uEnergy;
-uniform float uBreath;
-uniform float uLowAmplitude;
-uniform float uMediumAmplitude;
-uniform float uDetailAmplitude;
-uniform float uLowFrequency;
-uniform float uMediumFrequency;
-uniform float uDetailFrequency;
-uniform float uDensityMotion;
-uniform vec3 uStretch;
-uniform float uScale;
+uniform float uFold;
+uniform float uFoldFreq;
+uniform float uWarp;
+uniform float uRidge;
+uniform float uRidgeFreq;
+uniform float uDetail;
+uniform float uDetailFreq;
+uniform float uFlow;
+uniform float uRibbon;
+uniform float uVolume;
+uniform float uShells;
+uniform float uBaseRadius;
 uniform float uPointSize;
 uniform float uPresence;
 uniform float uLightTheme;
 uniform float uTransition;
-uniform vec2 uPointer;
+uniform vec3 uPointerWorld;
 uniform float uPointerStrength;
+uniform vec3 uOrbCenter;
+uniform float uOrbRadius;
 
-attribute vec3 aBasePosition;
+attribute vec3 aSphere;
+attribute vec3 aVolume;
+attribute float aShell;
 attribute float aRandom;
-attribute float aLayer;
 attribute float aPhase;
 
 varying float vAlpha;
-varying float vLayer;
-varying float vEdge;
-varying vec3 vColor;
+varying float vShade;
+varying float vRim;
+varying float vDepth;
 
-float hash(vec3 p) {
-  p = fract(p * 0.3183099 + 0.1);
-  p *= 17.0;
-  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+${simplex}
+
+mat2 rot2(float a) { float s = sin(a); float c = cos(a); return mat2(c, -s, s, c); }
+
+// Slow, non-periodic domain rotation so the field morphs instead of scrolling.
+vec3 domain(vec3 d, float t) {
+  d.xz = rot2(t * 0.047) * d.xz;
+  d.xy = rot2(t * 0.031 + 0.6) * d.xy;
+  return d;
 }
 
-float noise(vec3 x) {
-  vec3 i = floor(x);
-  vec3 f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(mix(hash(i), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
-        mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
-    mix(mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
-        mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z
+vec3 warpField(vec3 p, float t) {
+  return vec3(
+    snoise(p * 0.72 + vec3(0.0, 0.0, t * 0.105)),
+    snoise(p * 0.72 + vec3(5.2, 1.3, -t * 0.089)),
+    snoise(p * 0.72 + vec3(2.1, 7.7, t * 0.097))
   );
 }
 
-float fbm(vec3 p) {
-  float value = 0.0;
-  float amplitude = 0.5;
-  for (int octave = 0; octave < 4; octave++) {
-    value += noise(p) * amplitude;
-    p = p * 2.03 + vec3(9.2, 4.7, 7.1);
-    amplitude *= 0.5;
-  }
-  return value;
-}
-
-mat2 rotate2d(float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
-  return mat2(c, -s, s, c);
-}
-
-float layerResponse() {
-  if (aLayer < 0.5) return 1.0;
-  if (aLayer < 1.5) return 0.56;
-  return 0.34;
-}
-
-vec3 organicShape(vec3 p, float t) {
-  vec3 dir = normalize(p);
-  float response = layerResponse();
-  float broad = fbm(dir * 2.35 + vec3(t * 0.045, -t * 0.032, t * 0.038));
-  float fine = fbm(dir * 5.4 - vec3(t * 0.026, t * 0.021, -t * 0.018));
-  float ripple = sin(dir.y * 5.0 + aPhase + t * 0.11) * 0.5 + 0.5;
-  float displacement = ((broad - 0.48) * 0.19 + (fine - 0.5) * 0.055 + (ripple - 0.5) * 0.035);
-  return p + dir * displacement * uEnergy * response;
-}
-
-vec3 ribbonShape(vec3 p, float t) {
-  vec3 dir = normalize(p);
-  float response = layerResponse();
-  float latitude = dir.y * 3.1;
-  float twist = sin(latitude + aPhase * 0.16 + t * 0.055) * 0.2 * uEnergy * response;
-  p.xz = rotate2d(twist) * p.xz;
-  float band = sin(latitude * 2.15 + atan(dir.z, dir.x) * 1.7 + t * 0.08);
-  float grain = fbm(dir * 3.8 + vec3(t * 0.028, 0.0, -t * 0.021)) - 0.5;
-  return p + normalize(p) * (band * 0.105 + grain * 0.11) * uEnergy * response;
-}
-
-vec3 petalShape(vec3 p, float t) {
-  vec3 dir = normalize(p);
-  float response = layerResponse();
-  float azimuth = atan(dir.y, dir.x);
-  float elevation = asin(clamp(dir.z, -1.0, 1.0));
-  float petals = sin(azimuth * 6.0 + elevation * 2.25 + t * 0.075);
-  float secondary = sin(azimuth * 3.0 - elevation * 4.0 - t * 0.052);
-  float grain = fbm(dir * 4.1 + vec3(-t * 0.018, t * 0.024, t * 0.016)) - 0.5;
-  float filament = pow(max(0.0, petals), 7.0) * smoothstep(0.965, 1.0, aRandom) * 0.2;
-  float displacement = petals * 0.09 + secondary * 0.036 + grain * 0.11 + filament;
-  return p + dir * displacement * uEnergy * response;
-}
-
-vec3 foldedShape(vec3 p, float t) {
-  vec3 dir = normalize(p);
-  float response = layerResponse();
-  float azimuth = atan(dir.y, dir.x);
-  float elevation = asin(clamp(dir.z, -1.0, 1.0));
-  float fourFold = cos(azimuth * 4.0 + sin(elevation * 3.0) * 0.72 + t * 0.045);
-  float seam = sin(azimuth * 2.0 - elevation * 5.0 - t * 0.036);
-  float grain = fbm(dir * 3.25 + vec3(t * 0.016, -t * 0.019, t * 0.013)) - 0.5;
-  float crease = pow(1.0 - abs(seam), 5.0);
-  float displacement = fourFold * 0.09 + seam * 0.05 + grain * 0.09 - crease * 0.055;
-  vec3 folded = p + dir * displacement * uEnergy * response;
-  folded.xy *= 1.0 + (0.028 * fourFold - 0.045 * crease) * uEnergy * response;
-  return folded;
-}
-
-vec3 morphShape(vec3 p, float t) {
-  vec3 organic = organicShape(p, t);
-  vec3 ribbon = ribbonShape(p, t);
-  vec3 petal = petalShape(p, t);
-  vec3 folded = foldedShape(p, t);
-
-  if (uShape < 1.0) return mix(organic, ribbon, smoothstep(0.0, 1.0, uShape));
-  if (uShape < 2.0) return mix(ribbon, petal, smoothstep(1.0, 2.0, uShape));
-  return mix(petal, folded, smoothstep(2.0, 3.0, uShape));
-}
-
-// A shared flow field moves the silhouette coherently. Fine point drift below
-// adds life without turning the outer surface into independent jitter.
-vec3 ambientShape(vec3 p, float t) {
-  vec3 dir = normalize(p);
-  float response = layerResponse();
-  vec3 lowOffset = vec3(t * 0.19, -t * 0.137, t * 0.163);
-  vec3 midOffset = vec3(-t * 0.27, t * 0.215, -t * 0.23);
-  vec3 warp = vec3(
-    fbm(dir * 1.05 + lowOffset),
-    fbm(dir.yzx * 1.2 - lowOffset * 0.73),
-    fbm(dir.zxy * 0.94 + lowOffset * 0.51)
-  ) - 0.5;
-  float low = fbm(dir * uLowFrequency + warp * 0.82 + lowOffset) - 0.49;
-  float mid = fbm(dir * uMediumFrequency + warp * 0.38 + midOffset) - 0.49;
-  float travelling = fbm(dir * 2.55 + vec3(t * 0.105, t * 0.052, -t * 0.145)) - 0.49;
-  float high = fbm(dir * uDetailFrequency + vec3(t * 0.12, -t * 0.16, t * 0.09)) - 0.49;
-  vec3 lobeAxis = normalize(vec3(
-    noise(vec3(t * 0.18, 2.1, 4.7)) - 0.5,
-    noise(vec3(5.4, t * 0.145, 1.6)) - 0.5,
-    noise(vec3(3.8, 7.2, t * 0.205)) - 0.5
-  ));
-  vec3 counterAxis = normalize(vec3(
-    noise(vec3(8.2, t * 0.11, 1.3)) - 0.5,
-    noise(vec3(t * 0.16, 4.1, 6.8)) - 0.5,
-    noise(vec3(2.7, t * 0.095, 9.1)) - 0.5
-  ));
-  float primaryLobe = dot(dir, lobeAxis) * (0.12 + abs(low) * 0.17);
-  float secondaryLobe = (pow(abs(dot(dir, counterAxis)), 2.2) - 0.34) * 0.115;
-  float activity = 0.78 + uEnergy * 0.46;
-  float radial = (low * uLowAmplitude + mid * uMediumAmplitude + travelling * (uLowAmplitude * .28) + high * uDetailAmplitude + primaryLobe + secondaryLobe)
-    * uBreath * activity * response;
-  float evolvingFold = fbm(
-    dir * 1.36
-    + vec3(t * 0.36, -t * 0.27, t * 0.21)
-    + warp * 0.46
-  ) - 0.49;
-  float counterFold = fbm(
-    dir.yzx * 2.08
-    + vec3(-t * 0.19, t * 0.24, -t * 0.31)
-  ) - 0.49;
-  radial += (evolvingFold * 0.18 + counterFold * 0.075)
-    * (0.72 + uLowAmplitude * 0.58)
-    * uBreath
-    * response;
-  return p + dir * radial;
+// r(dir) - 1 : the whole sculptural form.
+float relief(vec3 d, vec3 w, float t) {
+  vec3 p = domain(d, t);
+  float fold = snoise(p * uFoldFreq + w * uWarp + vec3(t * 0.121, -t * 0.083, t * 0.064)) * 0.58
+             + snoise(p * uFoldFreq * 0.52 + vec3(-t * 0.071, t * 0.093, 3.7)) * 0.5;
+  float ridge = 1.0 - abs(snoise(p * uRidgeFreq + w * 0.62 + vec3(t * 0.087, -t * 0.113, t * 0.069)));
+  ridge = ridge * ridge * ridge;
+  float detail = snoise(d * uDetailFreq + vec3(t * 0.19, t * 0.14, -t * 0.17));
+  float breath = snoise(vec3(t * 0.083, 1.7, 3.1)) * 0.018;
+  return uFold * fold + uRidge * (ridge - 0.3) + uDetail * detail + breath;
 }
 
 void main() {
-  vec3 pos = ambientShape(morphShape(aBasePosition, uTime), uTime) * uStretch;
+  float t = uTime;
+  vec3 d = aSphere;
+  vec3 w = warpField(d, t);
 
-  vec2 pointerDelta = pos.xy - uPointer;
-  float pointerDistance = dot(pointerDelta, pointerDelta);
-  float pointerField = exp(-pointerDistance * 1.65)
-    * smoothstep(-0.65, 0.95, pos.z)
-    * uPointerStrength
-    * layerResponse();
-  vec2 pointerDirection = pointerDelta / max(length(pointerDelta), 0.001);
-  pos.xy += pointerDirection * pointerField * 0.145;
-  pos += normalize(pos) * pointerField * 0.075;
+  // RIBBON — gather azimuth toward drifting meridians (open lantern).
+  if (uRibbon > 0.001) {
+    float az = atan(d.z, d.x);
+    float el = asin(clamp(d.y, -1.0, 1.0));
+    float k = 9.0;
+    float drift = t * 0.035 + w.x * 0.25;
+    az -= uRibbon * 0.92 * sin(k * (az - drift)) / k;
+    d = vec3(cos(el) * cos(az), sin(el), cos(el) * sin(az));
+  }
 
-  // Scroll-controlled transitional compression stays separate from the
-  // continuously evolving ambient field above.
-  pos.xz *= 1.0 + uTransition * 0.07 * layerResponse();
-  pos.y *= 1.0 - uTransition * 0.055 * layerResponse();
+  // FLOW — latitude/noise dependent twist + tangential slide: rings become fibres.
+  if (uFlow > 0.001) {
+    float twist = uFlow * (1.55 * d.y + 1.05 * snoise(d * 1.15 + vec3(0.0, t * 0.074, 1.9)));
+    d.xz = rot2(twist) * d.xz;
+    vec3 tangential = w - dot(w, d) * d;
+    d = normalize(d + tangential * uFlow * 0.2);
+  }
 
-  float layerSpin = aLayer < 0.5 ? 0.012 : (aLayer < 1.5 ? -0.021 : 0.029);
-  pos.xz = rotate2d(uTime * layerSpin + sin(aPhase + uTime * 0.12) * 0.007 * aLayer) * pos.xz;
-  pos.xy = rotate2d(uTime * 0.0065) * pos.xy;
+  // SHELLS — ordered nested layers, counter-rotating slowly.
+  float shellRadius = mix(0.4, 1.0, aShell);
+  if (uShells > 0.001) {
+    d.xz = rot2(uShells * (aShell - 0.5) * t * 0.26) * d.xz;
+    d.yz = rot2(uShells * (aShell - 0.5) * 0.9) * d.yz;
+  }
 
-  vec3 direction = normalize(pos);
-  vec3 tangentA = normalize(cross(direction, normalize(vec3(0.31, 0.82, 0.47))));
-  vec3 tangentB = normalize(cross(direction, tangentA));
-  float flowA = sin(aPhase + uTime * 0.54 + pos.y * 2.1);
-  float flowB = cos(aPhase * 0.73 - uTime * 0.42 + pos.x * 1.8);
-  float flowNoise = fbm(direction * 3.7 + vec3(uTime * 0.12, -uTime * 0.09, uTime * 0.15)) - 0.5;
-  pos += (tangentA * (flowA + flowNoise) * 0.021 + tangentB * (flowB - flowNoise) * 0.014)
-    * uBreath * (0.72 + uDensityMotion * .28) * (0.68 + layerResponse() * 0.32);
+  float r = 1.0 + relief(d, w, t);
 
-  float breathing = 1.0 + sin(uTime * 0.42) * 0.014 * uBreath
-    + sin(uTime * 0.31 + aPhase) * 0.006 * uBreath * (0.55 + aLayer * 0.22);
-  pos *= breathing * uScale;
+  // Normal of the displaced surface from two tangent samples.
+  vec3 helper = abs(d.y) < 0.98 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+  vec3 ta = normalize(cross(d, helper));
+  vec3 tb = cross(d, ta);
+  const float e = 0.045;
+  float ra = 1.0 + relief(normalize(d + ta * e), w, t);
+  float rb = 1.0 + relief(normalize(d + tb * e), w, t);
+  vec3 n = normalize(d - (((ra - r) / e) * ta + ((rb - r) / e) * tb) / r);
 
-  vec3 surfaceDirection = normalize(pos);
-  float edge = pow(1.0 - abs(surfaceDirection.z), 1.35);
-  float layerAlpha = aLayer < 0.5
-    ? mix(0.42, 0.82, aRandom)
-    : (aLayer < 1.5 ? mix(0.2, 0.46, aRandom) : mix(0.11, 0.3, aRandom));
+  float layered = r * mix(1.0, shellRadius, uShells);
+  vec3 pos = d * layered;
 
-  vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+  // VOLUME — the same points collapse into a slowly swirling dust body.
+  vec3 v = aVolume;
+  v.xz = rot2(t * (0.05 + (1.0 - length(aVolume)) * 0.09)) * v.xz;
+  pos = mix(pos, v * r * 1.02, uVolume);
+  n = normalize(mix(n, d, uVolume * 0.8 + uShells * 0.5));
+
+  pos *= uBaseRadius;
+
+  // Scroll-owned transitional compression (macro system).
+  pos.xz *= 1.0 + uTransition * 0.06;
+  pos.y *= 1.0 - uTransition * 0.05;
+
+  vec4 world = modelMatrix * vec4(pos, 1.0);
+  vec3 sphereView = normalize(normalMatrix * aSphere);
+  vec3 normalView = normalize(normalMatrix * n);
+
+  // POINTER — world-space swell that stays under the cursor whatever the rotation.
+  vec2 dp = world.xy - uPointerWorld.xy;
+  float sigma = uOrbRadius * 0.52;
+  float field = exp(-dot(dp, dp) / (sigma * sigma)) * uPointerStrength * smoothstep(-0.25, 0.45, sphereView.z);
+  vec3 outward = normalize(world.xyz - uOrbCenter + vec3(0.0001));
+  float ripple = sin(length(dp) / sigma * 5.5 - t * 2.1 + aPhase * 0.15);
+  world.xyz += outward * field * uOrbRadius * (0.17 + ripple * 0.025);
+  world.z += field * uOrbRadius * 0.15;
+  world.xy -= dp * field * 0.1;
+
+  vec4 mvPosition = viewMatrix * world;
   gl_Position = projectionMatrix * mvPosition;
-  float layerSize = aLayer < 0.5 ? 1.0 : (aLayer < 1.5 ? 0.76 : 0.62);
-  gl_PointSize = uPointSize * mix(1.0, 1.04, uLightTheme) * layerSize * mix(0.82, 1.16, aRandom) / -mvPosition.z;
 
-  float densityField = fbm(surfaceDirection * 3.1 + vec3(uTime * 0.07, -uTime * 0.045, uTime * 0.055));
-  float densityBreath = 0.88 + densityField * (0.12 + uDensityMotion * .1)
-    + sin(aPhase + uTime * (0.22 + uDensityMotion * .09)) * (0.015 + uDensityMotion * .013) * uBreath
-    + pointerField * 0.08;
-  vAlpha = layerAlpha * mix(0.68, 1.22, edge) * densityBreath * uPresence;
-  vLayer = aLayer;
-  vEdge = edge;
-  vColor = mix(vec3(0.72, 0.76, 0.84), vec3(0.96, 0.96, 0.98), edge);
+  // Sculptural light: key light + rim, back hemisphere dimmed for depth.
+  vec3 lightDir = normalize(vec3(-0.5, 0.62, 0.6));
+  float lambert = max(dot(normalView, lightDir), 0.0);
+  float rim = 1.0 - abs(normalView.z);
+  float front = smoothstep(-0.45, 0.3, sphereView.z);
+  vShade = clamp(0.16 + lambert * 0.74 + field * 0.3, 0.0, 1.2);
+  vRim = rim;
+  vDepth = front;
+
+  float grain = mix(0.72, 1.0, aRandom);
+  float lit = mix(0.2 + 0.8 * vShade, 0.55, uVolume);
+  vAlpha = grain * lit * mix(0.34, 1.0, front) * (0.62 + 0.55 * pow(rim, 2.2)) * uPresence;
+
+  gl_PointSize = uPointSize * mix(0.82, 1.18, aRandom) * mix(1.0, 0.8, uVolume) / -mvPosition.z;
 }
 `;
 
@@ -240,35 +225,33 @@ uniform float uColorMix;
 uniform float uRim;
 uniform float uShellTint;
 uniform vec3 uTintColor;
-uniform float uAdditive;
 uniform float uLightTheme;
 
 varying float vAlpha;
-varying float vLayer;
-varying float vEdge;
-varying vec3 vColor;
+varying float vShade;
+varying float vRim;
+varying float vDepth;
 
 void main() {
-  vec2 centered = gl_PointCoord - 0.5;
-  float distanceFromCenter = length(centered);
-  if (distanceFromCenter > 0.5) discard;
+  vec2 c = gl_PointCoord - 0.5;
+  float dist = length(c);
+  if (dist > 0.5) discard;
+  float disc = smoothstep(0.5, 0.22, dist);
 
-  float softDisc = smoothstep(0.5, 0.08, distanceFromCenter);
-  float layerAccent = vLayer < 0.5 ? 0.58 : (vLayer < 1.5 ? 0.78 : 0.9);
-  vec3 lightThemeBase = mix(vec3(0.12, 0.125, 0.14), vec3(0.012, 0.016, 0.021), 0.34 + vEdge * 0.66);
-  vec3 baseColor = mix(vColor, lightThemeBase, uLightTheme);
-  vec3 themeTint = mix(uTintColor, uTintColor * 0.5, uLightTheme);
-  vec3 themeAccent = mix(uColor, uColor * 0.46, uLightTheme);
-  vec3 color = mix(baseColor, themeTint, uShellTint * layerAccent);
-  color = mix(color, themeAccent, uColorMix * mix(0.78, 1.0, layerAccent));
-  vec3 rimColor = mix(vec3(0.22, 0.55, 0.48), vec3(0.025, 0.05, 0.048), uLightTheme);
-  color = mix(color, rimColor, uRim * vEdge * 0.72);
+  // Dark theme: light points, brightness follows the key light.
+  vec3 darkBase = mix(vec3(0.46, 0.49, 0.55), vec3(0.97, 0.97, 0.99), clamp(vShade, 0.0, 1.0));
+  // Light theme: ink points, darker in shadow and along the silhouette.
+  vec3 lightBase = mix(vec3(0.02, 0.022, 0.028), vec3(0.28, 0.29, 0.31), clamp(vShade * (1.0 - vRim * 0.6), 0.0, 1.0));
+  vec3 color = mix(darkBase, lightBase, uLightTheme);
 
-  float alpha = softDisc * vAlpha * mix(1.0, 1.28, uLightTheme);
-  if (uAdditive > 0.5) {
-    gl_FragColor = vec4(color, alpha);
-  } else {
-    gl_FragColor = vec4(color, alpha);
-  }
+  vec3 tint = mix(uTintColor * (0.55 + 0.6 * vShade), uTintColor * 0.62, uLightTheme);
+  color = mix(color, tint, uShellTint * (0.45 + 0.4 * vRim));
+  vec3 accent = mix(uColor * (0.5 + 0.7 * vShade), uColor * 0.58, uLightTheme);
+  color = mix(color, accent, uColorMix * (0.55 + 0.35 * vRim));
+  vec3 rimColor = mix(vec3(0.3, 0.72, 0.65), vec3(0.03, 0.2, 0.18), uLightTheme);
+  color = mix(color, rimColor, uRim * pow(vRim, 3.0) * 0.8);
+
+  float alpha = disc * vAlpha * mix(1.0, 1.35, uLightTheme);
+  gl_FragColor = vec4(color, alpha);
 }
 `;
