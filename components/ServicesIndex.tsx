@@ -6,6 +6,7 @@ import { useScene } from '@/hooks/useScene';
 import { useBubble } from '@/context/BubbleContext';
 import { SERVICES } from '@/data/services';
 import { useLanguage } from '@/context/LanguageContext';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
@@ -98,13 +99,20 @@ export function ServicesIndex() {
     lastInput.current = performance.now();
   }, [scroll.scrollY]);
 
-  // Autoplay clock + timer bar, one rAF loop, only while the scene is active.
+  // Autoplay clock + timer bar on the page's frame clock, only while the scene
+  // is active. It runs after the scroll state of the frame, and treats any
+  // scroll movement in this frame as input first, so autoplay can never
+  // advance in the same frame as a scroll-driven change.
   useEffect(() => {
     if (!sceneActive) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let raf = 0;
+    let seenScrollY = window.scrollY;
     const tick = () => {
       const now = performance.now();
+      if (Math.abs(window.scrollY - seenScrollY) > .5) {
+        seenScrollY = window.scrollY;
+        lastInput.current = now;
+      }
       const since = now - Math.max(lastInput.current, lastChange.current);
       const fraction = hoverPaused ? 0 : clamp01(since / CYCLE);
       if (timerRef.current) timerRef.current.style.transform = `scaleX(${fraction.toFixed(4)})`;
@@ -112,10 +120,8 @@ export function ServicesIndex() {
         lastChange.current = now;
         setAutoOffset((value) => value + 1);
       }
-      raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return addFrameCallback(tick, FRAME_ORDER.TIMERS);
   }, [sceneActive, hoverPaused]);
 
   useEffect(() => () => { if (transitionTimer.current) clearTimeout(transitionTimer.current); }, []);
@@ -236,7 +242,7 @@ export function ServicesIndex() {
       </div>
 
       <style jsx>{`
-        .services-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; will-change: transform; }
+        .services-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; }
         .mask { display: block; overflow: hidden; }
         .mask > * { display: inline-block; }
         .services-heading { grid-column: 1 / 12; grid-row: 2 / 4; align-self: end; padding-bottom: 8px; }

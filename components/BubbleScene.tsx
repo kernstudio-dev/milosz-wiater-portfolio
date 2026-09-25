@@ -4,7 +4,8 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useTheme } from '@/context/ThemeContext';
 import { useBubble } from '@/context/BubbleContext';
-import { useScrollProgress } from '@/context/ScrollContext';
+import { getLiveScroll } from '@/context/ScrollContext';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 import { bubbleVertexShader, bubbleFragmentShader } from '@/components/bubble/shaders';
 import { sampleOrbTravel } from '@/lib/orbMotion';
 import {
@@ -23,7 +24,7 @@ const MOBILE_PARTICLES = 26000;
 
 declare global {
   interface Window {
-    __orbDebug?: { rect: [number, number, number, number]; time: number; personality: Record<string, number> };
+    __orbDebug?: { rect: [number, number, number, number]; time: number; g: number; personality: Record<string, number> };
   }
 }
 
@@ -104,13 +105,10 @@ function buildOrbGeometry(count: number) {
 
 export function BubbleScene() {
   const mountRef = useRef<HTMLDivElement>(null);
-  const scroll = useScrollProgress();
   const bubble = useBubble();
   const { theme } = useTheme();
-  const scrollRef = useRef(scroll);
   const bubbleRef = useRef(bubble);
   const themeRef = useRef(theme);
-  scrollRef.current = scroll;
   bubbleRef.current = bubble;
   themeRef.current = theme;
 
@@ -189,9 +187,15 @@ export function BubbleScene() {
     travelGroup.add(ambientGroup);
     scene.add(travelGroup);
 
-    let raf = 0;
-    let previous = performance.now();
     let ready = false;
+    let tintHex = '';
+    const debug = {
+      rect: [0, 0, 0, 0] as [number, number, number, number],
+      time: 0,
+      g: 0,
+      personality: { ...HERO, serviceWeight: 0 } as Record<string, number>,
+    };
+    window.__orbDebug = debug;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const pointerTarget = { x: -9999, y: -9999, active: false };
     const pointerState = { x: 0, y: 0, strength: 0, leanX: 0, leanY: 0 };
@@ -224,10 +228,12 @@ export function BubbleScene() {
     document.documentElement.addEventListener('pointerleave', onPointerLeave, { passive: true });
     window.addEventListener('blur', onPointerLeave);
 
-    const render = (now: number) => {
-      const dt = Math.min(0.05, (now - previous) / 1000);
-      previous = now;
-      const { globalProgress } = scrollRef.current;
+    // Runs on the page's single frame clock, after Lenis and after the scroll
+    // state commit, so the orb and the grid aperture use the same scroll value
+    // and land in the same painted frame.
+    const render = (_now: number, deltaMs: number) => {
+      const dt = Math.min(0.05, deltaMs / 1000);
+      const { globalProgress } = getLiveScroll();
       const { gridMetrics, workProjectColor, activeServiceIndex, setReady } = bubbleRef.current;
       const width = window.innerWidth;
       const height = window.innerHeight;
@@ -328,7 +334,10 @@ export function BubbleScene() {
       uniforms.uColorMix.value = travel.colorMix;
       uniforms.uRim.value = travel.rim;
       uniforms.uShellTint.value = travel.shellTint;
-      uniforms.uTintColor.value.set(workProjectColor);
+      if (workProjectColor !== tintHex) {
+        tintHex = workProjectColor;
+        uniforms.uTintColor.value.set(workProjectColor);
+      }
       uniforms.uColor.value.copy(neutralAccent).lerp(serviceColor, serviceWeight);
 
       const depth = globalProgress < .08 || globalProgress > .94 ? 'foreground' : globalProgress < .43 ? 'background' : 'midground';
@@ -345,22 +354,25 @@ export function BubbleScene() {
 
       renderer.render(scene, camera);
 
-      window.__orbDebug = {
-        rect: [x - orbRadiusPixels * 1.45, y - orbRadiusPixels * 1.45, x + orbRadiusPixels * 1.45, y + orbRadiusPixels * 1.45],
-        time,
-        personality: { ...personality, serviceWeight },
-      };
+      const half = orbRadiusPixels * 1.45;
+      debug.rect[0] = x - half;
+      debug.rect[1] = y - half;
+      debug.rect[2] = x + half;
+      debug.rect[3] = y + half;
+      debug.time = time;
+      debug.g = globalProgress;
+      Object.assign(debug.personality, personality);
+      debug.personality.serviceWeight = serviceWeight;
 
       if (!ready) {
         ready = true;
         setReady(true);
       }
-      raf = requestAnimationFrame(render);
     };
 
-    raf = requestAnimationFrame(render);
+    const stop = addFrameCallback(render, FRAME_ORDER.ORB);
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', onPointerMove);
       document.documentElement.removeEventListener('pointerleave', onPointerLeave);

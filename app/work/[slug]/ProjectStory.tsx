@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { usePageTransition } from '@/context/TransitionContext';
 import { useLenis } from '@/hooks/useLenis';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 import styles from './project.module.css';
 
 interface ProjectStoryProps {
@@ -31,7 +32,9 @@ function useSceneVariables(root: React.RefObject<HTMLElement | null>, key: strin
     if (!page) return;
     const scenes = Array.from(page.querySelectorAll<HTMLElement>('[data-scene]'));
     const tracks = Array.from(page.querySelectorAll<HTMLElement>('[data-track]'));
-    let frame = 0;
+    let lastY = Number.NaN;
+    let lastVh = Number.NaN;
+    let dirty = true;
     const measureTracks = () => {
       tracks.forEach((track) => {
         const distance = Math.max(0, track.scrollWidth - window.innerWidth);
@@ -39,10 +42,16 @@ function useSceneVariables(root: React.RefObject<HTMLElement | null>, key: strin
       });
     };
     const update = () => {
-      frame = 0;
       const vh = window.innerHeight;
-      scenes.forEach((scene) => {
-        const rect = scene.getBoundingClientRect();
+      const y = window.scrollY;
+      if (!dirty && y === lastY && vh === lastVh) return;
+      dirty = false;
+      lastY = y;
+      lastVh = vh;
+      // Read every rect first, then write: no forced layout between scenes.
+      const rects = scenes.map((scene) => scene.getBoundingClientRect());
+      scenes.forEach((scene, index) => {
+        const rect = rects[index];
         if (rect.bottom < -vh * .5 || rect.top > vh * 1.5) return;
         const p = clamp((vh - rect.top) / (rect.height + vh));
         const pe = clamp((vh - rect.top) / vh);
@@ -53,17 +62,17 @@ function useSceneVariables(root: React.RefObject<HTMLElement | null>, key: strin
         if (pe > .18 && !scene.dataset.in) scene.dataset.in = 'true';
       });
     };
-    const request = () => { if (!frame) frame = requestAnimationFrame(update); };
-    const onResize = () => { measureTracks(); request(); };
+    const onResize = () => { measureTracks(); dirty = true; };
     measureTracks();
     update();
-    window.addEventListener('scroll', request, { passive: true });
+    // On the page's frame clock right after Lenis: variables are computed from
+    // the scroll position of this frame, including the first frame of a gesture.
+    const stop = addFrameCallback(update, FRAME_ORDER.SCENE);
     window.addEventListener('resize', onResize, { passive: true });
     const settle = window.setTimeout(onResize, 400);
     return () => {
-      if (frame) cancelAnimationFrame(frame);
+      stop();
       window.clearTimeout(settle);
-      window.removeEventListener('scroll', request);
       window.removeEventListener('resize', onResize);
     };
   }, [root, key]);

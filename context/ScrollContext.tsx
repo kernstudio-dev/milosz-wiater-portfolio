@@ -1,7 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { SectionId } from '@/lib/grid';
+import { flushSync } from 'react-dom';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 
 type ProgressMap = Record<SectionId, number>;
 
@@ -14,10 +16,22 @@ interface ScrollContextValue {
 }
 
 const INITIAL: ProgressMap = { hero: 0, work: 0, services: 0, about: 0, footer: 0 };
+
+type ScrollSnapshot = { progress: ProgressMap; globalProgress: number; scrollY: number; viewportHeight: number };
+
+/**
+ * The scroll state of the current frame. Written once per frame by the frame
+ * clock (after Lenis, before any scroll-driven writer), so non-React consumers
+ * such as the WebGL orb read exactly the value React is committing this frame.
+ */
+const liveScroll: ScrollSnapshot = { progress: { ...INITIAL }, globalProgress: 0, scrollY: 0, viewportHeight: 900 };
+export function getLiveScroll(): Readonly<ScrollSnapshot> {
+  return liveScroll;
+}
 const ScrollContext = createContext<ScrollContextValue | null>(null);
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
-function readProgress(): { progress: ProgressMap; globalProgress: number; scrollY: number; viewportHeight: number } {
+function readProgress(): ScrollSnapshot {
   const y = window.scrollY;
   const vh = window.innerHeight;
   const read = (id: SectionId) => {
@@ -45,29 +59,31 @@ function readProgress(): { progress: ProgressMap; globalProgress: number; scroll
 
 export function ScrollProvider({ children }: { children: React.ReactNode }) {
   const [snapshot, setSnapshot] = useState({ progress: INITIAL, globalProgress: 0, scrollY: 0, viewportHeight: 900 });
-  const frame = useRef(0);
 
   useEffect(() => {
-    const update = () => {
-      frame.current = 0;
+    let lastY = Number.NaN;
+    let lastVh = Number.NaN;
+    let lastDocH = Number.NaN;
+    const read = () => {
+      const y = window.scrollY;
+      const vh = window.innerHeight;
+      const docH = document.documentElement.scrollHeight;
+      if (Math.abs(y - lastY) <= 0.5 && vh === lastVh && docH === lastDocH) return null;
+      lastY = y;
+      lastVh = vh;
+      lastDocH = docH;
       const next = readProgress();
-      setSnapshot((prev) => (
-        Math.abs(prev.scrollY - next.scrollY) > 0.5 || prev.viewportHeight !== next.viewportHeight
-          ? next
-          : prev
-      ));
+      Object.assign(liveScroll, next);
+      return next;
     };
-    const requestUpdate = () => {
-      if (!frame.current) frame.current = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate, { passive: true });
-    return () => {
-      if (frame.current) cancelAnimationFrame(frame.current);
-      window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
-    };
+    const initial = read();
+    if (initial) setSnapshot(initial);
+    // Commit synchronously inside the frame, so every scroll-driven style is
+    // painted in the same frame as the scroll position it was computed from.
+    return addFrameCallback(() => {
+      const next = read();
+      if (next) flushSync(() => setSnapshot(next));
+    }, FRAME_ORDER.SCROLL_STATE);
   }, []);
 
   const value = useMemo<ScrollContextValue>(() => ({

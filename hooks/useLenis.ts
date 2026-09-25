@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Lenis from 'lenis';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 
 declare global {
   interface Window {
@@ -26,15 +27,10 @@ export function useLenis(enabled = true) {
     lenisRef.current = lenis;
     window.kernLenis = lenis;
 
-    let raf = 0;
-    const loop = (time: number) => {
-      lenis.raf(time);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    const stop = addFrameCallback((time) => lenis.raf(time), FRAME_ORDER.SCROLL_ENGINE);
 
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
       lenis.destroy();
       lenisRef.current = null;
       delete window.kernLenis;

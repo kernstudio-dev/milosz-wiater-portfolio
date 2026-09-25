@@ -205,6 +205,19 @@ img, video {
   display: flow-root;
 }
 
+.pinning-lead {
+  position: absolute;
+  top: -100svh;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.pinning-lead--flow {
+  display: contents;
+}
+
 .pinning-container--relative {
   position: relative;
   height: 100svh;

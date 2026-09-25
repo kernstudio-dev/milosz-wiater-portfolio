@@ -38,11 +38,6 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
   const sceneOpacity = !isPinnedLayout ? 1 : entrance * (1 - exit);
   const sceneVisible = sceneOpacity > .001;
 
-  // While a scene enters it has not reached its sticky position yet. Offset it
-  // so every scene occupies the viewport from the first frame of its window:
-  // transitions become choreography inside one fixed frame instead of two
-  // layouts sliding over each other.
-  const entryOffset = overlapsPrevious ? (1 - enter) * scroll.viewportHeight : 0;
 
   let hole = gridMetrics
     ? getPlaceholderRect(id, gridMetrics.blockSize, gridMetrics.sectionCols)
@@ -76,17 +71,23 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
       }}
       data-section={id}
     >
-      <div
-        className={pinned ? 'pinning-container' : 'pinning-container pinning-container--relative'}
-        style={{
-          display: sceneVisible ? undefined : 'none',
-          opacity: sceneOpacity,
-          pointerEvents: sceneOpacity > .5 ? undefined : 'none',
-          transform: entryOffset > .5 ? `translate3d(0,${-entryOffset}px,0)` : undefined,
-        }}
-      >
-        {gridMetrics && <SectionGrid metrics={gridMetrics} bubbleHole={hole} />}
-        <div className="section-content">{children}</div>
+      {/* The lead starts one viewport above an overlapping section, so its sticky
+          frame is natively pinned at top 0 for the whole handoff window: the
+          browser positions it in the same frame as the scroll, with no
+          script-driven compensation. It is absolutely positioned, so the
+          section's box (and all progress maths) is unchanged. */}
+      <div className={overlapsPrevious ? 'pinning-lead' : 'pinning-lead pinning-lead--flow'}>
+        <div
+          className={pinned || overlapsPrevious ? 'pinning-container' : 'pinning-container pinning-container--relative'}
+          style={{
+            display: sceneVisible ? undefined : 'none',
+            opacity: sceneOpacity,
+            pointerEvents: sceneOpacity > .5 ? 'auto' : 'none',
+          }}
+        >
+          {gridMetrics && <SectionGrid metrics={gridMetrics} bubbleHole={sceneVisible ? hole : null} />}
+          <div className="section-content">{children}</div>
+        </div>
       </div>
     </section>
   );

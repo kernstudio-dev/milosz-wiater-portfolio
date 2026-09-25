@@ -7,6 +7,7 @@ import { useBubble } from '@/context/BubbleContext';
 import { usePageTransition } from '@/context/TransitionContext';
 import { PROJECTS } from '@/data/projects';
 import { useLanguage } from '@/context/LanguageContext';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 
 const COLORS = ['#b15ee8', '#e96c24', '#2f6cff', '#43cabc', '#8aa19b'];
 const COUNT = PROJECTS.length;
@@ -40,6 +41,9 @@ export function SelectedWork() {
   const scrollIndex = Math.min(COUNT - 1, Math.round(raw));
   const isManual = manualProgress.current !== null;
   const railPosition = isManual ? activeIndex : raw;
+  const railRef = useRef<HTMLElement>(null);
+  const railTarget = useRef(railPosition);
+  railTarget.current = railPosition;
 
   // Entry choreography inside the overlap window: heading → viewport opens → info → scrubber.
   const heading = smooth((enter - .42) / .3);
@@ -80,6 +84,24 @@ export function SelectedWork() {
   useEffect(() => setWorkProjectColor(COLORS[activeIndex]), [activeIndex, setWorkProjectColor]);
   useEffect(() => { prefetch(`/work/${PROJECTS[activeIndex].id}`); }, [activeIndex, prefetch]);
   useEffect(() => () => { if (projectTimer.current) clearTimeout(projectTimer.current); }, []);
+
+  // The scrubber indicator has exactly one writer: this follower. Scroll and
+  // manual selection only set its target. Rate 9.9/s matches the decay of the
+  // previous .7s ease-out-expo transition, without restarting it every frame.
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let current = railTarget.current;
+    let written = Number.NaN;
+    return addFrameCallback((_time, deltaMs) => {
+      const target = railTarget.current;
+      current = reduced ? target : current + (target - current) * (1 - Math.exp(-(deltaMs / 1000) * 9.9));
+      if (Math.abs(target - current) < .0005) current = target;
+      if (current !== written && railRef.current) {
+        written = current;
+        railRef.current.style.transform = `translate3d(${(current * 100).toFixed(3)}%,0,0)`;
+      }
+    }, FRAME_ORDER.SCENE);
+  }, []);
 
   const open = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
@@ -203,7 +225,7 @@ export function SelectedWork() {
                 <span>{item.number}</span>
               </button>
             ))}
-            <i className="scrub-indicator" style={{ transform: `translate3d(${railPosition * 100}%,0,0)` }} aria-hidden="true" />
+            <i ref={railRef} className="scrub-indicator" aria-hidden="true" />
           </div>
         </div>
 
@@ -280,7 +302,7 @@ export function SelectedWork() {
         .scrub-track button:hover img { opacity: .75; filter: grayscale(.3); transform: scale(1.02); }
         .scrub-track button.is-active img { opacity: 1; filter: none; transform: scale(1); }
         .scrub-track span { position: absolute; left: 7px; bottom: 6px; color: #fff; font: 500 9px/1 var(--font-mono); text-shadow: 0 1px 4px #000; }
-        .scrub-indicator { position: absolute; left: 0; bottom: -6px; width: calc((100% - ${(COUNT - 1) * 8}px) / ${COUNT}); height: 2px; background: var(--text-primary); pointer-events: none; transition: transform .7s var(--ease-out-expo); }
+        .scrub-indicator { position: absolute; left: 0; bottom: -6px; width: calc((100% - ${(COUNT - 1) * 8}px) / ${COUNT}); height: 2px; background: var(--text-primary); pointer-events: none; }
         .scrub-indicator { margin-right: 8px; }
 
         .work-controls { grid-column: 1 / 3; grid-row: 10 / 11; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border-primary); background: var(--bg-canvas); }

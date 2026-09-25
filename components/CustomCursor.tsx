@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 
 export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
@@ -19,8 +20,8 @@ export function CustomCursor() {
     let mouseY = -100;
     let followerX = -100;
     let followerY = -100;
-    let rafId: number;
-    let previousFrame = performance.now();
+    let targetDirty = false;
+    let lastScrollY = window.scrollY;
     let currentState = 'default';
     let currentText = '';
     let isVisible = false;
@@ -61,7 +62,7 @@ export function CustomCursor() {
       if (dotRef.current) {
         dotRef.current.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
       }
-      readTarget();
+      targetDirty = true;
     };
     const resetCursor = () => {
       isVisible = false;
@@ -69,10 +70,19 @@ export function CustomCursor() {
       applyState('default');
     };
 
-    // Smooth lerping loop for outer cursor follower
-    const render = (now: number) => {
-      const dt = Math.min(.05, (now - previousFrame) / 1000);
-      previousFrame = now;
+    // Runs last on the frame clock: after every scroll-driven write of the
+    // frame, so the hit-test reuses the frame's layout instead of forcing an
+    // extra one mid-frame.
+    const render = (_now: number, deltaMs: number) => {
+      const dt = Math.min(.05, deltaMs / 1000);
+      if (window.scrollY !== lastScrollY) {
+        lastScrollY = window.scrollY;
+        targetDirty = true;
+      }
+      if (targetDirty && isVisible) {
+        targetDirty = false;
+        readTarget();
+      }
       const follow = 1 - Math.exp(-dt * 18);
       followerX += (mouseX - followerX) * follow;
       followerY += (mouseY - followerY) * follow;
@@ -80,22 +90,18 @@ export function CustomCursor() {
       if (followerRef.current) {
         followerRef.current.style.transform = `translate3d(${followerX}px, ${followerY}px, 0) translate(-50%, -50%)`;
       }
-
-      rafId = requestAnimationFrame(render);
     };
 
     window.addEventListener('mousemove', onMouseMove, { passive: true });
-    window.addEventListener('scroll', readTarget, { passive: true });
     window.addEventListener('blur', resetCursor);
     document.addEventListener('mouseleave', resetCursor);
-    rafId = requestAnimationFrame(render);
+    const stop = addFrameCallback(render, FRAME_ORDER.CURSOR);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('scroll', readTarget);
       window.removeEventListener('blur', resetCursor);
       document.removeEventListener('mouseleave', resetCursor);
-      cancelAnimationFrame(rafId);
+      stop();
     };
   }, []);
 
