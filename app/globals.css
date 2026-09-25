@@ -54,6 +54,9 @@
 
   --grid-line-color: rgba(0, 0, 0, 0.05);
   --grid-line-large: rgba(0, 0, 0, 0.075);
+  /* route map: graphite, clearly above the grid, below content frames' ink */
+  --route-line: rgba(20, 20, 18, 0.5);
+  --route-line-soft: rgba(20, 20, 18, 0.3);
   --bg-cell: #F8F8F5;
   --grid-block-size: 64px;
 
@@ -83,6 +86,8 @@
 
   --grid-line-color: #282727;
   --grid-line-large: #282727;
+  --route-line: rgba(255, 255, 255, 0.3);
+  --route-line-soft: rgba(255, 255, 255, 0.16);
 
   --accent-cyan: #43cabc;
   --accent-cyan-dim: rgba(67, 202, 188, 0.15);
@@ -282,6 +287,38 @@ img, video {
   background: var(--bg-cell, var(--bg-canvas));
   box-shadow: inset 1px 1px 0 0 var(--grid-line-large, var(--grid-line-color));
 }
+
+/* ---------------------------------------------------------------- route map
+   Static structural layer between the grid and the content (see RouteMap). */
+.route-map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+.route-line, .route-tick, .route-dash {
+  fill: none;
+  stroke: var(--route-line);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.route-tick { stroke: var(--route-line-soft); }
+.route-dash { stroke-dasharray: 2 5; }
+.route-node { fill: var(--bg-canvas); stroke: var(--route-line); stroke-width: 1; shape-rendering: crispEdges; }
+.route-node--next { fill: var(--route-line); }
+.route-node--end { fill: var(--text-primary); stroke: var(--text-primary); }
+.route-node-core { fill: var(--text-primary); shape-rendering: crispEdges; }
+.route-node-core--end { fill: var(--bg-canvas); }
+.route-text {
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: .14em;
+  fill: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.route-text--num { fill: var(--text-primary); }
+.route-text--coord { fill: var(--text-quaternary); letter-spacing: .1em; }
 
 .bubble-placeholder {
   position: absolute;

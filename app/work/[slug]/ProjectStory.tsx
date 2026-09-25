@@ -140,8 +140,34 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
     return { '--cx': `${c.x}%`, '--cy': `${c.y}%`, '--zoom': c.zoom };
   };
 
+  // System tour: the camera visits each build point on the full interface.
+  // Focal points are clamped so the zoomed image always covers its frame.
+  const ZOOM = 2.1;
+  const edge = 50 / ZOOM;
+  const focus = (v: number) => Math.min(100 - edge, Math.max(edge, v));
+  const tour: Vars = { '--zmax': ZOOM };
+  visuals.crops.slice(0, 4).forEach((c, i) => {
+    tour[`--x${i}`] = focus(c.x);
+    tour[`--y${i}`] = focus(c.y);
+  });
+
+  const total = String(PROJECTS.length).padStart(2, '0');
+  const mark = (number: string, label: string, light = false) => (
+    <div className={`${styles.mark} ${light ? styles.markLight : ''}`}>
+      <i aria-hidden="true" />
+      <span className={styles.markNum}>{number}</span>
+      <span className={styles.markLabel}>{label}</span>
+    </div>
+  );
+
   return (
-    <main ref={pageRef} className={`${styles.page} ${ready ? styles.ready : ''}`} data-language={language} style={{ '--accent': visuals.accent } as Vars}>
+    <main
+      ref={pageRef}
+      className={`${styles.page} ${ready ? styles.ready : ''}`}
+      data-language={language}
+      data-project={project.id}
+      style={{ '--accent': visuals.accent } as Vars}
+    >
       <header className={styles.header}>
         <a href="/" className={styles.brand} onClick={(event) => back(event, '/', 'KERN')}><span>KE</span>RN</a>
         <nav className={styles.headerControls}>
@@ -153,16 +179,20 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </nav>
       </header>
 
-      {/* 1 — HERO: full-bleed (matches the route transition frame), insets into a window on scroll */}
+      {/* The page's route: one rail in the left gutter, a station at every chapter. */}
+      <div className={styles.rail} aria-hidden="true" />
+
+      {/* 00 — PROJECT: full-bleed (matches the route transition), insets into a framed window */}
       <section className={styles.hero} data-scene>
         <div className={styles.heroSticky}>
           <div className={styles.heroMedia}>
             <img ref={heroImage} src={project.media.src} alt={copy.mediaAlt} />
             <span className={styles.heroShade} />
           </div>
+          <span className={styles.heroCorners} aria-hidden="true"><i /><i /><i /><i /></span>
           <div className={styles.heroCopy}>
             <div className={styles.kicker}>
-              <span>{dictionary.caseStudy.caseStudy} / {project.number}</span>
+              <span>{dictionary.caseStudy.project} / {project.number}</span>
               <span>{copy.category}</span>
               <span>{project.year}</span>
             </div>
@@ -179,15 +209,20 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </div>
       </section>
 
-      {/* 2 — STATEMENT: word-by-word, tied to scroll */}
+      {/* 01 — CONTEXT: oversized statement, index column, floating detail */}
       <section className={styles.statement} data-scene>
+        <div className={styles.statementHead}>{mark('01', dictionary.caseStudy.overview)}</div>
         <div className={styles.statementAside}>
-          <span className={styles.label}>{dictionary.caseStudy.overview}</span>
-          <span className={styles.statementIndex}>{project.number}<small>/ {String(PROJECTS.length).padStart(2, '0')}</small></span>
+          <span className={styles.statementIndex}>{project.number}<small>/ {total}</small></span>
+          <span className={styles.statementCategory}>{copy.category}</span>
         </div>
         <p className={styles.statementText} style={{ '--n': statementWords.length } as Vars}>
           {statementWords.map((word, i) => <span key={`${word}-${i}`} style={{ '--i': i } as Vars}>{word} </span>)}
         </p>
+        <figure className={styles.detail} style={crop(2)}>
+          <div className={styles.detailMedia}><img src={project.media.src} alt="" /></div>
+          <figcaption><span>{dictionary.caseStudy.figure} 01</span>{story.build[1]?.title}</figcaption>
+        </figure>
         <dl className={styles.facts}>
           <div style={{ '--d': '0s' } as Vars}><dt>{dictionary.caseStudy.role}</dt><dd>{copy.role}</dd></div>
           <div style={{ '--d': '.08s' } as Vars}><dt>{dictionary.caseStudy.technology}</dt><dd>{project.technologies.join(' / ')}</dd></div>
@@ -196,61 +231,92 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </dl>
       </section>
 
-      {/* 3 — CHALLENGE: sticky cinematic crop, copy reveals over it */}
+      {/* 02 — CHALLENGE: sticky cinematic crop, statement reveals over it */}
       <section className={styles.challenge} data-scene>
         <div className={styles.challengeSticky}>
           <div className={styles.challengeMedia} style={crop(0)}><img src={project.media.src} alt="" /></div>
           <div className={styles.challengeCopy}>
-            <span className={styles.label}>01 — {dictionary.caseStudy.challenge}</span>
+            {mark('02', dictionary.caseStudy.challenge, true)}
             <h2>{story.challengeTitle}</h2>
             <p>{story.challenge}</p>
           </div>
         </div>
       </section>
 
-      {/* 4 — THE BUILD: horizontal strip driven by vertical scroll */}
-      <section className={styles.build} data-scene>
-        <div className={styles.buildSticky}>
-          <div className={styles.buildHead}>
-            <span className={styles.label}>02 — {dictionary.caseStudy.build}</span>
-            <span className={styles.buildCount}>01<i>—</i>{String(story.build.length).padStart(2, '0')}</span>
+      {/* 03 — SYSTEM: the full interface as an annotated map; the camera tours each build point */}
+      <section className={styles.system} data-scene style={tour}>
+        <div className={styles.systemSticky}>
+          <div className={styles.systemHead}>
+            {mark('03', dictionary.caseStudy.build)}
+            <span className={styles.systemCount}>01<i>—</i>{String(story.build.length).padStart(2, '0')}</span>
           </div>
-          <div className={styles.buildTrack} data-track>
-            {story.build.map((item, i) => (
-              <article className={styles.buildCard} key={item.title} style={{ ...crop(i + 1), '--k': i } as Vars}>
-                <div className={styles.buildMedia}><img src={project.media.src} alt="" /></div>
-                <span className={styles.buildIndex}>{String(i + 1).padStart(2, '0')}</span>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
+          <div className={styles.systemBody}>
+            <figure className={styles.blueprint}>
+              <div className={styles.bpFrame}>
+                <div className={styles.bpZoom}><img src={project.media.src} alt={copy.mediaAlt} /></div>
+                {visuals.crops.slice(0, 4).map((c, i) => (
+                  <span key={i} className={styles.bpMarker} style={{ '--mx': c.x, '--my': c.y, '--i': i } as Vars} aria-hidden="true">
+                    <b>{String(i + 1).padStart(2, '0')}</b>
+                  </span>
+                ))}
+              </div>
+              <span className={styles.bpRulerX} aria-hidden="true" />
+              <span className={styles.bpRulerY} aria-hidden="true" />
+              <figcaption><span>{dictionary.caseStudy.figure} 03</span>{dictionary.caseStudy.systemMap}</figcaption>
+            </figure>
+            <ol className={styles.bpList}>
+              {story.build.map((item, i) => (
+                <li key={item.title} style={{ '--i': i } as Vars}>
+                  <span className={styles.bpIndex}>{String(i + 1).padStart(2, '0')}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </li>
+              ))}
+            </ol>
           </div>
           <div className={styles.buildRail}><i /></div>
         </div>
       </section>
 
-      {/* 5 — APPROACH: copy + parallax detail */}
+      {/* 04 — APPROACH: a purely typographic spread */}
       <section className={styles.approach} data-scene>
-        <div className={styles.approachCopy}>
-          <div>
-            <span className={styles.label}>03 — {dictionary.caseStudy.approach}</span>
-            <h2>{story.approachTitle}</h2>
+        {mark('04', dictionary.caseStudy.approach)}
+        <h2 className={styles.approachTitle}>{story.approachTitle}</h2>
+        <div className={styles.approachGrid}>
+          <span className={styles.approachAside}>{copy.subtitle}</span>
+          <p className={styles.approachText}>{story.approach}</p>
+          <div className={styles.stack}>
+            <span className={styles.stackLabel}>{dictionary.caseStudy.stack}</span>
+            <ol>
+              {project.technologies.map((technology, i) => (
+                <li key={technology}><span>{String(i + 1).padStart(2, '0')}</span>{technology}</li>
+              ))}
+            </ol>
           </div>
-          <p>{story.approach}</p>
-        </div>
-        <div className={styles.approachMedia} style={crop(3)}><img src={project.media.src} alt="" /></div>
-      </section>
-
-      {/* 6 — FINAL EXPERIENCE: full-bleed, opens and settles */}
-      <section className={styles.final} data-scene>
-        <div className={styles.finalMedia}><img src={project.media.src} alt={`${project.title} — ${dictionary.caseStudy.finalExperience}`} /></div>
-        <div className={styles.finalCaption}>
-          <span className={styles.label}>{dictionary.caseStudy.finalExperience} / {project.year}</span>
-          <p>{story.closing}</p>
         </div>
       </section>
 
-      {/* 7 — NEXT PROJECT: closing scene */}
+      {/* 05 — RESULT: the product, framed and staged */}
+      <section className={styles.result} data-scene>
+        <div className={styles.resultSticky}>
+          <div className={styles.resultStage}>
+            <div className={styles.browser}>
+              <div className={styles.browserBar} aria-hidden="true">
+                <i /><i /><i />
+                <span>{project.title}</span>
+              </div>
+              <div className={styles.browserMedia}><img src={project.media.src} alt={`${project.title} — ${dictionary.caseStudy.finalExperience}`} /></div>
+            </div>
+          </div>
+          <div className={styles.resultCard}>
+            {mark('05', dictionary.caseStudy.result)}
+            <p>{story.closing}</p>
+            <span className={styles.resultMeta}>{copy.category} · {project.year}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 06 — NEXT: the route continues into the next project */}
       <section className={styles.next} data-scene style={{ '--lines': nextLines.length } as Vars}>
         <div className={styles.nextSticky}>
           <a
@@ -261,7 +327,10 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
             aria-label={`${dictionary.caseStudy.viewNext}: ${next.title}`}
             onClick={openNext}
           >
-            <span className={styles.nextLabel}>{dictionary.caseStudy.nextProject} <em>{next.number} / {String(PROJECTS.length).padStart(2, '0')}</em></span>
+            <span className={styles.nextHead}>{mark('06', dictionary.caseStudy.nextProject)}</span>
+            <span className={styles.nextCount}>{next.number} / {total}</span>
+            <span className={styles.nextNumber} aria-hidden="true">{next.number}</span>
+            <span className={styles.nextRoute} aria-hidden="true"><i /></span>
             <div className={styles.nextPreview} ref={nextPreview}><img src={next.media.src} alt={nextCopy.mediaAlt} /></div>
             <span className={styles.nextTitle}>
               {nextLines.map((line) => <span className={styles.line} key={line}><span>{line}</span></span>)}

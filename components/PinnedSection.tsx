@@ -7,6 +7,7 @@ import { sampleOrbTravel } from '@/lib/orbMotion';
 import { CROSSFADE, enterProgress, leaveProgress } from '@/lib/sceneTiming';
 import { useScrollProgress } from '@/context/ScrollContext';
 import { SectionGrid } from '@/components/SectionGrid';
+import { RouteMap } from '@/components/RouteMap';
 import { useBubble } from '@/context/BubbleContext';
 
 interface PinnedSectionProps {
@@ -86,6 +87,7 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
           }}
         >
           {gridMetrics && <SectionGrid metrics={gridMetrics} bubbleHole={sceneVisible ? hole : null} />}
+          {gridMetrics && sceneVisible && <RouteMap id={id} metrics={gridMetrics} hole={hole} enter={enter} leave={leave} />}
           <div className="section-content">{children}</div>
         </div>
       </div>
