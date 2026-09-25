@@ -181,7 +181,10 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
 
       {/* 2 — STATEMENT: word-by-word, tied to scroll */}
       <section className={styles.statement} data-scene>
-        <span className={styles.label}>{dictionary.caseStudy.overview}</span>
+        <div className={styles.statementAside}>
+          <span className={styles.label}>{dictionary.caseStudy.overview}</span>
+          <span className={styles.statementIndex}>{project.number}<small>/ {String(PROJECTS.length).padStart(2, '0')}</small></span>
+        </div>
         <p className={styles.statementText} style={{ '--n': statementWords.length } as Vars}>
           {statementWords.map((word, i) => <span key={`${word}-${i}`} style={{ '--i': i } as Vars}>{word} </span>)}
         </p>
@@ -210,7 +213,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         <div className={styles.buildSticky}>
           <div className={styles.buildHead}>
             <span className={styles.label}>02 — {dictionary.caseStudy.build}</span>
-            <span className={styles.buildCount}>{String(story.build.length).padStart(2, '0')}</span>
+            <span className={styles.buildCount}>01<i>—</i>{String(story.build.length).padStart(2, '0')}</span>
           </div>
           <div className={styles.buildTrack} data-track>
             {story.build.map((item, i) => (
@@ -229,8 +232,10 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       {/* 5 — APPROACH: copy + parallax detail */}
       <section className={styles.approach} data-scene>
         <div className={styles.approachCopy}>
-          <span className={styles.label}>03 — {dictionary.caseStudy.approach}</span>
-          <h2>{story.approachTitle}</h2>
+          <div>
+            <span className={styles.label}>03 — {dictionary.caseStudy.approach}</span>
+            <h2>{story.approachTitle}</h2>
+          </div>
           <p>{story.approach}</p>
         </div>
         <div className={styles.approachMedia} style={crop(3)}><img src={project.media.src} alt="" /></div>
@@ -246,7 +251,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       </section>
 
       {/* 7 — NEXT PROJECT: closing scene */}
-      <section className={styles.next} data-scene>
+      <section className={styles.next} data-scene style={{ '--lines': nextLines.length } as Vars}>
         <div className={styles.nextSticky}>
           <a
             href={`/work/${next.id}`}

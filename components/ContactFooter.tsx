@@ -58,7 +58,8 @@ export function ContactFooter() {
         form { height: calc(100% - 36px); display: grid; grid-template-rows: var(--grid-block-size) var(--grid-block-size) var(--grid-block-size) 3fr var(--grid-block-size); }
         input, textarea { width: 100%; min-width: 0; padding: 16px 14px; color: var(--text-secondary); background: transparent; border: 0; border-top: 1px solid var(--border-primary); outline: none; font: 300 16px/1.35 var(--font-display); }
         textarea { resize: none; }
-        input:focus, textarea:focus { background: color-mix(in srgb, var(--text-primary) 3%, transparent); }
+        input:focus, textarea:focus { background: color-mix(in srgb, var(--text-primary) 4%, transparent); box-shadow: inset 2px 0 0 var(--border-active); color: var(--text-primary); }
+        input:focus-visible, textarea:focus-visible { outline: none; }
         button { border-top: 1px solid var(--border-primary); font-size: 16px; color: var(--text-secondary); }
         button:hover { background: var(--text-primary); color: var(--bg-canvas); }
         .footer-thanks { margin: 40px 14px; color: var(--text-secondary); }
