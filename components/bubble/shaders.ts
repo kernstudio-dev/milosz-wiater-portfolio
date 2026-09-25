@@ -176,8 +176,10 @@ void main() {
   // VOLUME — the same points collapse into a slowly swirling dust body.
   vec3 v = aVolume;
   v.xz = rot2(t * (0.05 + (1.0 - length(aVolume)) * 0.09)) * v.xz;
-  pos = mix(pos, v * r * 1.02, uVolume);
-  n = normalize(mix(n, d, uVolume * 0.8 + uShells * 0.5));
+  // Only a growing fraction of points leaves the skin, so the membrane survives.
+  float toCore = clamp((uVolume * 1.15 - aRandom) * 9.0, 0.0, 1.0);
+  pos = mix(pos, v * r * 0.92, toCore);
+  n = normalize(mix(n, d, toCore * 0.8 + uShells * 0.5));
 
   pos *= uBaseRadius;
 
@@ -212,10 +214,10 @@ void main() {
   vDepth = front;
 
   float grain = mix(0.72, 1.0, aRandom);
-  float lit = mix(0.2 + 0.8 * vShade, 0.55, uVolume);
+  float lit = mix(0.2 + 0.8 * vShade, 0.5, toCore);
   vAlpha = grain * lit * mix(0.34, 1.0, front) * (0.62 + 0.55 * pow(rim, 2.2)) * uPresence;
 
-  gl_PointSize = uPointSize * mix(0.82, 1.18, aRandom) * mix(1.0, 0.8, uVolume) / -mvPosition.z;
+  gl_PointSize = uPointSize * mix(0.82, 1.18, aRandom) * mix(1.0, 0.8, toCore) / -mvPosition.z;
 }
 `;
 

@@ -9,234 +9,326 @@ import { useLanguage } from '@/context/LanguageContext';
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
+const mod = (value: number, n: number) => ((value % n) + n) % n;
 
+const COUNT = SERVICES.length;
+/** Scroll range (section progress) that maps onto the six service slots. */
+const SLOT_START = 1 / 6;
+const SLOT_END = 0.8;
+/** Autoplay: first advance and every following advance happen CYCLE ms after the latest user input. */
+const CYCLE = 4600;
+const TRANSITION_MS = 1150;
+
+/**
+ * Services is ONE motion scene.
+ *
+ *   displayed = (scrollSlot + autoOffset) mod 6
+ *
+ * - scrolling changes scrollSlot → the content always moves in the scroll direction
+ * - autoplay (idle only) increments autoOffset → the document never scrolls
+ * - any scroll input restarts the idle clock, so autoplay yields immediately
+ * - leaving the scene resets autoOffset → re-entry is deterministic (01 from above, 06 from below)
+ */
 export function ServicesIndex() {
   const scroll = useScrollProgress();
   const progress = scroll.progress.services;
   const { setActiveServiceIndex } = useBubble();
   const { dictionary } = useLanguage();
   const layoutRef = useRef<HTMLDivElement>(null);
-  const activeIndexRef = useRef(0);
-  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollResumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastScrollY = useRef(scroll.scrollY);
-  const hasEntered = useRef(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [previousIndex, setPreviousIndex] = useState<number | null>(null);
-  const [direction, setDirection] = useState<1 | -1>(1);
-  const [transitioning, setTransitioning] = useState(false);
+  const timerRef = useRef<HTMLElement>(null);
   const [inViewport, setInViewport] = useState(false);
-  const [interactionPaused, setInteractionPaused] = useState(false);
-  const [scrollPaused, setScrollPaused] = useState(false);
-  const start = 1 / 6;
-  const end = 0.78;
-  const serviceProgress = clamp01((progress - start) / (end - start));
-  const scrollIndex = Math.min(SERVICES.length - 1, Math.floor(serviceProgress * SERVICES.length));
-  const service = dictionary.services.items[activeIndex];
-  const previousService = previousIndex === null ? null : dictionary.services.items[previousIndex];
-  const exit = smooth((progress - 0.88) / 0.12);
-  const headingReveal = smooth((progress - 0.055) / 0.085);
-  const contentReveal = smooth((progress - 0.08) / 0.13);
-  const sceneActive = inViewport && progress > .08 && progress < .94;
+  const [autoOffset, setAutoOffset] = useState(0);
+  const [hoverPaused, setHoverPaused] = useState(false);
+  const [previous, setPrevious] = useState<{ index: number; direction: 1 | -1; id: number } | null>(null);
+  const lastInput = useRef(0);
+  const lastChange = useRef(0);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const displayedRef = useRef(0);
+  const changeId = useRef(0);
 
-  const changeService = useCallback((targetIndex: number, manual = false) => {
-    const normalized = (targetIndex + SERVICES.length) % SERVICES.length;
-    const current = activeIndexRef.current;
-    if (normalized === current) return;
+  const slotProgress = clamp01((progress - SLOT_START) / (SLOT_END - SLOT_START));
+  const scrollSlot = Math.min(COUNT - 1, Math.floor(slotProgress * COUNT));
+  const sceneActive = inViewport && progress > .1 && progress < .95;
+  const displayed = mod(scrollSlot + autoOffset, COUNT);
+  const service = dictionary.services.items[displayed];
+  const previousService = previous ? dictionary.services.items[previous.index] : null;
+  const direction = previous?.direction ?? 1;
+
+  const headingReveal = smooth((progress - .05) / .09);
+  const panelReveal = smooth((progress - .075) / .085);
+  const listReveal = smooth((progress - .095) / .075);
+  const exit = smooth((progress - .9) / .1);
+
+  // One place reacts to the displayed index: transition layers + orb personality.
+  useEffect(() => {
+    const from = displayedRef.current;
+    if (from === displayed) return;
+    let delta = displayed - from;
+    if (delta > COUNT / 2) delta -= COUNT;
+    if (delta < -COUNT / 2) delta += COUNT;
+    displayedRef.current = displayed;
+    lastChange.current = performance.now();
+    changeId.current += 1;
+    setPrevious({ index: from, direction: delta >= 0 ? 1 : -1, id: changeId.current });
     if (transitionTimer.current) clearTimeout(transitionTimer.current);
-    setPreviousIndex(current);
-    setDirection(normalized > current || (current === SERVICES.length - 1 && normalized === 0) ? 1 : -1);
-    activeIndexRef.current = normalized;
-    setActiveIndex(normalized);
-    setTransitioning(true);
-    transitionTimer.current = setTimeout(() => {
-      setTransitioning(false);
-      setPreviousIndex(null);
-    }, 980);
-    if (manual) {
-      setInteractionPaused(true);
-      if (resumeTimer.current) clearTimeout(resumeTimer.current);
-      resumeTimer.current = setTimeout(() => setInteractionPaused(false), 1800);
-    }
-  }, []);
+    transitionTimer.current = setTimeout(() => setPrevious(null), TRANSITION_MS);
+  }, [displayed]);
+
+  useEffect(() => setActiveServiceIndex(displayed), [displayed, setActiveServiceIndex]);
 
   useEffect(() => {
     const element = layoutRef.current;
     if (!element) return;
-    const observer = new IntersectionObserver(([entry]) => setInViewport(entry.isIntersecting && entry.intersectionRatio > .28), { threshold: [.05, .28, .6] });
+    const observer = new IntersectionObserver(
+      ([entry]) => setInViewport(entry.isIntersecting && entry.intersectionRatio > .25),
+      { threshold: [0, .25, .6] },
+    );
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
+  // Once the scene is fully off screen, hand control fully back to scroll so
+  // re-entry is deterministic. Never reset while any part is still visible.
+  const offscreen = !inViewport || progress <= .02 || progress >= .999;
   useEffect(() => {
-    if (sceneActive && !hasEntered.current) {
-      hasEntered.current = true;
-      activeIndexRef.current = scrollIndex;
-      setActiveIndex(scrollIndex);
-    }
-    if (!sceneActive) hasEntered.current = false;
-  }, [sceneActive, scrollIndex]);
+    if (offscreen) setAutoOffset(0);
+  }, [offscreen]);
 
-  useEffect(() => setActiveServiceIndex(activeIndex), [activeIndex, setActiveServiceIndex]);
-
+  // Any scroll movement is user input: restart the idle clock.
   useEffect(() => {
-    const moved = Math.abs(scroll.scrollY - lastScrollY.current) > .5;
-    lastScrollY.current = scroll.scrollY;
-    if (!sceneActive || !moved) return;
+    lastInput.current = performance.now();
+  }, [scroll.scrollY]);
 
-    setScrollPaused(true);
-    changeService(scrollIndex, false);
-    if (scrollResumeTimer.current) clearTimeout(scrollResumeTimer.current);
-    scrollResumeTimer.current = setTimeout(() => setScrollPaused(false), 1750);
-  }, [changeService, sceneActive, scroll.scrollY, scrollIndex]);
-
+  // Autoplay clock + timer bar, one rAF loop, only while the scene is active.
   useEffect(() => {
-    if (!sceneActive || interactionPaused || scrollPaused) return;
-    const timer = window.setTimeout(() => changeService(activeIndex + 1), 4800);
-    return () => window.clearTimeout(timer);
-  }, [activeIndex, changeService, interactionPaused, sceneActive, scrollPaused]);
+    if (!sceneActive) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+    const tick = () => {
+      const now = performance.now();
+      const since = now - Math.max(lastInput.current, lastChange.current);
+      const fraction = hoverPaused ? 0 : clamp01(since / CYCLE);
+      if (timerRef.current) timerRef.current.style.transform = `scaleX(${fraction.toFixed(4)})`;
+      if (!hoverPaused && !reduced && since >= CYCLE) {
+        lastChange.current = now;
+        setAutoOffset((value) => value + 1);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [sceneActive, hoverPaused]);
 
-  useEffect(() => () => {
-    if (transitionTimer.current) clearTimeout(transitionTimer.current);
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    if (scrollResumeTimer.current) clearTimeout(scrollResumeTimer.current);
-  }, []);
+  useEffect(() => () => { if (transitionTimer.current) clearTimeout(transitionTimer.current); }, []);
 
-  const pauseInteraction = () => {
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    setInteractionPaused(true);
-  };
-  const resumeInteraction = () => {
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    resumeTimer.current = setTimeout(() => setInteractionPaused(false), 1800);
-  };
+  const goTo = useCallback((target: number) => {
+    lastInput.current = performance.now();
+    setAutoOffset((offset) => {
+      const current = mod(scrollSlot + offset, COUNT);
+      let delta = mod(target, COUNT) - current;
+      if (delta > COUNT / 2) delta -= COUNT;
+      if (delta < -COUNT / 2) delta += COUNT;
+      return offset + delta;
+    });
+  }, [scrollSlot]);
+
+  const pause = () => { setHoverPaused(true); };
+  const resume = () => { lastInput.current = performance.now(); setHoverPaused(false); };
+
+  const number = (index: number) => String(index + 1).padStart(2, '0');
 
   return (
     <PinnedSection id="services">
       <div
         ref={layoutRef}
-        className="services-layout"
-        data-active-service={activeIndex}
-        style={{ opacity: 1 - exit, transform: `translateY(${-exit * 72}px)` }}
-        onFocusCapture={pauseInteraction}
-        onBlurCapture={resumeInteraction}
+        className={`services-layout dir-${direction > 0 ? 'fwd' : 'back'}`}
+        data-active-service={displayed}
+        data-scroll-slot={scrollSlot}
+        style={{ transform: `translate3d(0,${-exit * 60}px,0)`, opacity: 1 - exit * .85 }}
       >
         <div className="services-heading">
-          <p style={{ opacity: headingReveal }}>{dictionary.services.intro}</p>
-          <h2 aria-label={dictionary.services.title.join(' ')} style={{ clipPath: `inset(0 ${(1 - headingReveal) * 100}% 0 0)` }}>
-            {dictionary.services.title.map((word) => <span key={word}>{word}</span>)}
+          <p style={{ opacity: headingReveal, transform: `translateY(${(1 - headingReveal) * 14}px)` }}>{dictionary.services.intro}</p>
+          <h2 aria-label={dictionary.services.title.join(' ')}>
+            {dictionary.services.title.map((word, i) => (
+              <span className="mask" key={word}>
+                <span style={{ transform: `translate3d(0,${(1 - smooth((headingReveal - i * .12) / .76)) * 105}%,0)` }}>{word}</span>
+              </span>
+            ))}
           </h2>
         </div>
-        <a href="#footer" className="services-cta">{dictionary.services.cta}</a>
+        <a href="#footer" className="services-cta" style={{ clipPath: `inset(0 0 0 ${(1 - headingReveal) * 100}%)` }}>{dictionary.services.cta}</a>
 
-        <section className="services-panel" style={{ opacity: contentReveal }} aria-live="polite" onPointerEnter={pauseInteraction} onPointerLeave={resumeInteraction}>
+        <section
+          className="services-panel"
+          style={{ clipPath: `inset(0 ${(1 - panelReveal) * 100}% 0 0)` }}
+          aria-live="polite"
+          onPointerEnter={pause}
+          onPointerLeave={resume}
+        >
           <div className="services-panel-top">
-            <span className="services-number" key={`number-${activeIndex}`}>0{activeIndex + 1} / 0{SERVICES.length}</span>
-            <div className="services-nav" aria-label={dictionary.services.navigation}>
-              <button type="button" onClick={() => changeService(activeIndex - 1, true)} aria-label={dictionary.services.previous}>←</button>
-              <button type="button" onClick={() => changeService(activeIndex + 1, true)} aria-label={dictionary.services.next}>→</button>
+            <span className="services-number" aria-label={`${number(displayed)} / ${number(COUNT - 1)}`}>
+              <span className="roll">
+                {previous && <span key={`o${previous.id}`} className="roll-out">{number(previous.index)}</span>}
+                <span key={`i${displayed}-${previous?.id ?? 0}`} className={previous ? 'roll-in' : ''}>{number(displayed)}</span>
+              </span>
+              <span className="total">/ {number(COUNT - 1)}</span>
+            </span>
+            <div className="services-nav">
+              <button type="button" onClick={() => goTo(displayed - 1)} aria-label={dictionary.services.previous}>←</button>
+              <button type="button" onClick={() => goTo(displayed + 1)} aria-label={dictionary.services.next}>→</button>
             </div>
           </div>
-          <div className={`services-copy-stage direction-${direction}`}>
-            {transitioning && previousService && (
-              <div className="services-copy services-copy--outgoing" key={`out-${previousIndex}`} aria-hidden="true">
-                <h3><span>{previousService.title[0]}</span><strong>{previousService.title[1]}</strong></h3>
-                <p>{previousService.description}</p>
+
+          <div className="services-copy-stage">
+            {previous && previousService && (
+              <div className="services-copy is-out" key={`out-${previous.id}`} aria-hidden="true">
+                <h3>
+                  <span className="mask"><span>{previousService.title[0]}</span></span>
+                  <span className="mask mask--block"><strong>{previousService.title[1]}</strong></span>
+                </h3>
+                <p className="mask"><span>{previousService.description}</span></p>
               </div>
             )}
-            <div className="services-copy services-copy--incoming" key={`in-${activeIndex}`}>
-              <h3><span>{service.title[0]}</span><strong>{service.title[1]}</strong></h3>
-              <p>{service.description}</p>
+            <div className={`services-copy ${previous ? 'is-in' : ''}`} key={`in-${displayed}-${previous?.id ?? 0}`}>
+              <h3>
+                <span className="mask"><span>{service.title[0]}</span></span>
+                <span className="mask mask--block"><strong>{service.title[1]}</strong></span>
+              </h3>
+              <p className="mask"><span>{service.description}</span></p>
             </div>
           </div>
-          <div className="services-line"><i key={`line-${activeIndex}`} style={{ animationPlayState: interactionPaused || scrollPaused ? 'paused' : 'running' }} /></div>
+          <div className="services-timer"><i ref={timerRef} /></div>
         </section>
 
-        <nav className="services-index" aria-label={dictionary.services.navigation} style={{ opacity: contentReveal }} onPointerEnter={pauseInteraction} onPointerLeave={resumeInteraction}>
+        <div className="services-orb-stage" aria-hidden="true" style={{ opacity: listReveal }}>
+          <span className="stage-label">{dictionary.services.form} / {number(displayed)}</span>
+        </div>
+
+        <nav
+          className="services-index"
+          aria-label={dictionary.services.navigation}
+          onPointerEnter={pause}
+          onPointerLeave={resume}
+        >
           {dictionary.services.items.map((item, itemIndex) => (
             <button
-              key={item.title.join('-')}
+              key={itemIndex}
               type="button"
-              className={itemIndex === activeIndex ? 'is-active' : ''}
-              aria-current={itemIndex === activeIndex ? 'true' : undefined}
-              onClick={() => changeService(itemIndex, true)}
+              className={itemIndex === displayed ? 'is-active' : ''}
+              aria-current={itemIndex === displayed ? 'true' : undefined}
+              onClick={() => goTo(itemIndex)}
+              style={{
+                clipPath: `inset(0 0 ${(1 - smooth((listReveal - itemIndex * .08) / .6)) * 100}% 0)`,
+              }}
             >
-              <span>0{itemIndex + 1}</span>
+              <span>{number(itemIndex)}</span>
               <span>{item.title[0]} {item.title[1]}</span>
+              <i />
             </button>
           ))}
         </nav>
 
-        <div className="services-orb-stage" aria-hidden="true" style={{ opacity: contentReveal }}>
-          <span>{dictionary.services.form} / 0{activeIndex + 1}</span>
-        </div>
-
-        <div className="services-scope" key={`scope-${activeIndex}`} style={{ opacity: contentReveal }}>
+        <div className="services-scope" style={{ clipPath: `inset(0 ${(1 - listReveal) * 100}% 0 0)` }}>
           <span className="services-scope-label">{dictionary.services.focus}</span>
-          {service.scope.slice(0, 3).map((item) => <p key={item}>{item}</p>)}
+          {service.scope.slice(0, 3).map((item, i) => (
+            <p key={`${displayed}-${i}`} className="scope-item" style={{ animationDelay: `${.12 + i * .07}s` }}>{item}</p>
+          ))}
         </div>
       </div>
 
       <style jsx>{`
-        .services-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; }
-        .services-heading { grid-column: 1 / 11; grid-row: 2 / 4; align-self: end; padding-bottom: 8px; }
-        .services-heading p { font-size: 13px; color: var(--text-tertiary); margin-bottom: 7px; transition: opacity .18s linear; }
-        .services-heading h2 { display: flex; gap: .28em; font: 200 clamp(25px,2.45vw,38px)/.95 var(--font-display); letter-spacing: -.035em; color: var(--text-primary); white-space: nowrap; will-change: clip-path; }
-        .services-cta { grid-column: -3 / -1; grid-row: 3 / 4; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); font-size: 14px; color: var(--text-secondary); }
-        .services-panel { grid-column: 1 / 7; grid-row: 4 / 10; padding: 24px; border: 1px solid var(--border-primary); overflow: hidden; display: flex; flex-direction: column; transition: opacity .16s linear; }
-        .services-panel-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 3; }
-        .services-number { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); animation: serviceNumber .62s var(--ease-out-expo) both; }
+        .services-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; will-change: transform; }
+        .mask { display: block; overflow: hidden; }
+        .mask > * { display: inline-block; }
+        .services-heading { grid-column: 1 / 12; grid-row: 2 / 4; align-self: end; padding-bottom: 8px; }
+        .services-heading p { font-size: 13px; color: var(--text-tertiary); margin-bottom: 7px; }
+        .services-heading h2 { display: flex; gap: .28em; font: 200 clamp(25px,2.45vw,38px)/1 var(--font-display); letter-spacing: -.035em; color: var(--text-primary); white-space: nowrap; }
+        .services-heading h2 .mask > span { will-change: transform; }
+        .services-cta { grid-column: -3 / -1; grid-row: 3 / 4; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); font-size: 14px; color: var(--text-secondary); transition: background .3s ease, color .3s ease; }
+        .services-cta:hover { background: var(--text-primary); color: var(--bg-canvas); }
+
+        .services-panel { grid-column: 1 / 7; grid-row: 4 / 10; padding: 24px; border: 1px solid var(--border-primary); overflow: hidden; display: flex; flex-direction: column; background: var(--bg-canvas); }
+        .services-panel-top { display: flex; align-items: flex-start; justify-content: space-between; }
+        .services-number { display: flex; align-items: baseline; gap: 10px; font: 200 clamp(38px,3.4vw,58px)/1 var(--font-display); letter-spacing: -.04em; color: var(--text-primary); }
+        .services-number .total { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
+        .roll { position: relative; display: inline-block; overflow: hidden; height: 1em; min-width: 1.25em; }
+        .roll > span { display: block; }
+        .roll-out { position: absolute; inset: 0 auto auto 0; animation: rollOut .62s var(--ease-in-out-cubic) both; }
+        .roll-in { animation: rollIn .82s .08s var(--ease-out-expo) both; }
+        .dir-back .roll-out { animation-name: rollOutBack; }
+        .dir-back .roll-in { animation-name: rollInBack; }
         .services-nav { display: flex; gap: 5px; }
-        .services-nav button { width: 34px; height: 30px; border: 1px solid var(--border-primary); color: var(--text-secondary); transition: color .2s ease, background .2s ease; }
+        .services-nav button { width: 38px; height: 34px; border: 1px solid var(--border-primary); color: var(--text-secondary); transition: color .25s ease, background .25s ease; }
         .services-nav button:hover { color: var(--bg-canvas); background: var(--text-primary); }
-        .services-copy-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+
+        .services-copy-stage { position: relative; flex: 1; min-height: 0; }
         .services-copy { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
-        .services-panel h3 { display: flex; flex-direction: column; align-items: flex-start; font: 200 clamp(34px,3.65vw,56px)/1.02 var(--font-display); letter-spacing: -.05em; color: var(--text-primary); }
-        .services-panel h3 strong { font-weight: 200; color: var(--bg-canvas); background: var(--text-primary); padding: 0 9px 4px; }
-        .services-panel p { max-width: 520px; min-height: 76px; margin-top: 24px; font: 300 14px/1.5 var(--font-sans); color: var(--text-secondary); animation: serviceCopy .56s .14s var(--ease-out-expo) both; }
-        .services-copy--incoming { animation: serviceIn .94s .06s var(--ease-out-expo) both; }
-        .services-copy--outgoing { animation: serviceOut .64s var(--ease-in-out-cubic) both; }
-        .direction-1 .services-copy--incoming { --service-from: 42px; }
-        .direction-1 .services-copy--outgoing { --service-to: -28px; }
-        .direction--1 .services-copy--incoming { --service-from: -42px; }
-        .direction--1 .services-copy--outgoing { --service-to: 28px; }
-        .services-line { height: 1px; margin-top: 20px; background: var(--border-primary); transform-origin: left; }
-        .services-line i { display: block; width: 100%; height: 1px; background: var(--text-primary); transform-origin: left; animation: serviceTimer 4.8s linear both; }
-        .services-index { grid-column: 7 / -7; grid-row: 4 / 10; display: grid; grid-template-rows: repeat(6,1fr); border-block: 1px solid var(--border-primary); transition: opacity .16s linear; }
-        .services-index button { min-width: 0; display: grid; grid-template-columns: 42px 1fr; align-items: center; text-align: left; border-bottom: 1px solid var(--border-primary); color: var(--text-tertiary); transition: color .25s ease, padding .35s var(--ease-out-expo), background .25s ease; }
-        .services-index button > span:first-child { padding-left: 10px; font: 500 10px/1 var(--font-mono); }
-        .services-index button > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 clamp(10px,.78vw,12px)/1 var(--font-sans); letter-spacing: .015em; }
-        .services-index button:hover, .services-index button.is-active { color: var(--text-primary); padding-left: 7px; background: color-mix(in srgb, var(--text-primary) 3%, transparent); }
-        .services-orb-stage { grid-column: -7 / -1; grid-row: 4 / 10; position: relative; border: 1px solid var(--border-primary); overflow: hidden; transition: opacity .16s linear; }
-        .services-orb-stage span { position: absolute; right: 11px; bottom: 10px; font: 10px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
-        .services-scope { grid-column: 1 / -1; grid-row: 10 / 11; display: grid; grid-template-columns: 2fr repeat(3,3fr); border: 1px solid var(--border-primary); transition: opacity .16s linear; animation: scopeIn .72s .12s var(--ease-out-expo) both; }
+        .services-panel h3 { display: flex; flex-direction: column; align-items: flex-start; font: 200 clamp(34px,3.6vw,58px)/1.04 var(--font-display); letter-spacing: -.05em; color: var(--text-primary); }
+        .services-panel h3 strong { font-weight: 200; color: var(--bg-canvas); background: var(--text-primary); padding: 0 10px 5px; }
+        .mask--block { margin-top: 2px; }
+        .services-panel p { max-width: 520px; margin-top: 22px; font: 300 14px/1.55 var(--font-sans); color: var(--text-secondary); }
+        .services-panel p > span { display: block; }
+
+        /* incoming: lines rise through their masks, staggered */
+        .is-in h3 .mask:first-child > * { animation: lineIn .9s .1s var(--ease-out-expo) both; }
+        .is-in h3 .mask--block > * { animation: blockIn .95s .18s var(--ease-out-expo) both; }
+        .is-in p > span { animation: lineIn .9s .3s var(--ease-out-expo) both; }
+        /* outgoing: lines leave upward first, description slightly later */
+        .is-out h3 .mask:first-child > * { animation: lineOut .55s var(--ease-in-out-cubic) both; }
+        .is-out h3 .mask--block > * { animation: blockOut .55s .05s var(--ease-in-out-cubic) both; }
+        .is-out p > span { animation: lineOut .5s .08s var(--ease-in-out-cubic) both; }
+        .dir-back .is-in h3 .mask:first-child > *, .dir-back .is-in p > span { animation-name: lineInBack; }
+        .dir-back .is-out h3 .mask:first-child > *, .dir-back .is-out p > span { animation-name: lineOutBack; }
+
+        .services-timer { height: 1px; margin-top: 22px; background: var(--border-primary); overflow: hidden; }
+        .services-timer i { display: block; width: 100%; height: 1px; background: var(--text-primary); transform-origin: left; transform: scaleX(0); }
+
+        .services-orb-stage { grid-column: 7 / -7; grid-row: 4 / 10; position: relative; border-block: 1px solid var(--border-primary); pointer-events: none; }
+        .stage-label { position: absolute; left: 12px; bottom: 11px; font: 10px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
+
+        .services-index { grid-column: -7 / -1; grid-row: 4 / 10; display: grid; grid-template-rows: repeat(6,1fr); border: 1px solid var(--border-primary); border-bottom: 0; background: var(--bg-canvas); }
+        .services-index button { position: relative; min-width: 0; display: grid; grid-template-columns: 48px 1fr; align-items: center; text-align: left; border-bottom: 1px solid var(--border-primary); color: var(--text-tertiary); overflow: hidden; isolation: isolate; transition: color .35s ease; }
+        .services-index button > span:first-child { padding-left: 16px; font: 500 10px/1 var(--font-mono); }
+        .services-index button > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 clamp(11px,.82vw,13px)/1 var(--font-sans); letter-spacing: .02em; transition: transform .6s var(--ease-out-expo); }
+        .services-index button > i { position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--text-primary) 5%, transparent); transform: scaleX(0); transform-origin: left; transition: transform .7s var(--ease-out-expo); }
+        .services-index button:hover, .services-index button.is-active { color: var(--text-primary); }
+        .services-index button.is-active > span:nth-child(2), .services-index button:hover > span:nth-child(2) { transform: translateX(8px); }
+        .services-index button.is-active > i { transform: scaleX(1); }
+        .dir-back .services-index button > i { transform-origin: right; }
+
+        .services-scope { grid-column: 1 / -1; grid-row: 10 / 11; display: grid; grid-template-columns: 2fr repeat(3,3fr); border: 1px solid var(--border-primary); background: var(--bg-canvas); }
         .services-scope > * { display: flex; align-items: center; padding: 0 18px; border-right: 1px solid var(--border-primary); }
         .services-scope-label { font: 500 10px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
-        .services-scope p { font: 300 clamp(10px,.76vw,12px)/1.35 var(--font-sans); color: var(--text-secondary); }
-        @keyframes serviceIn { from { clip-path: inset(0 0 100% 0); transform: translateX(var(--service-from,42px)) scale(.985); } to { clip-path: inset(0); transform: none; } }
-        @keyframes serviceOut { to { clip-path: inset(100% 0 0 0); transform: translateX(var(--service-to,-28px)) scale(.985); opacity: 0; } }
-        @keyframes serviceCopy { from { clip-path: inset(0 0 100% 0); transform: translateY(10px); } to { clip-path: inset(0); transform: none; } }
-        @keyframes serviceNumber { from { clip-path: inset(0 0 100% 0); transform: translateY(8px); } to { clip-path: inset(0); transform: none; } }
-        @keyframes serviceTimer { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-        @keyframes scopeIn { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+        .scope-item { font: 300 clamp(10px,.76vw,12px)/1.35 var(--font-sans); color: var(--text-secondary); animation: scopeIn .8s var(--ease-out-expo) both; }
+
+        @keyframes lineIn { from { transform: translate3d(0,105%,0); } to { transform: none; } }
+        @keyframes lineOut { to { transform: translate3d(0,-105%,0); } }
+        @keyframes lineInBack { from { transform: translate3d(0,-105%,0); } to { transform: none; } }
+        @keyframes lineOutBack { to { transform: translate3d(0,105%,0); } }
+        @keyframes blockIn { from { clip-path: inset(0 100% 0 0); transform: translate3d(-18px,0,0); } to { clip-path: inset(0); transform: none; } }
+        @keyframes blockOut { to { clip-path: inset(0 0 0 100%); transform: translate3d(18px,0,0); } }
+        @keyframes rollIn { from { transform: translate3d(0,100%,0); } to { transform: none; } }
+        @keyframes rollOut { to { transform: translate3d(0,-100%,0); } }
+        @keyframes rollInBack { from { transform: translate3d(0,-100%,0); } to { transform: none; } }
+        @keyframes rollOutBack { to { transform: translate3d(0,100%,0); } }
+        @keyframes scopeIn { from { clip-path: inset(0 0 100% 0); transform: translate3d(0,8px,0); } to { clip-path: inset(0); transform: none; } }
+
         @media (min-width: 768px) and (max-height: 800px) {
-          .services-heading { grid-column: 1 / 12; }
-          .services-panel { grid-column: 1 / 7; padding: 18px 24px; }
-          .services-panel p { margin-top: 15px; min-height: 60px; }
+          .services-panel { padding: 18px 22px; }
+          .services-panel p { margin-top: 14px; font-size: 13px; }
         }
         @media (max-width: 767px) {
-          .services-layout { display: block; padding: 100px 20px 40px; overflow: auto; }
+          .services-layout { display: block; padding: 100px 20px 40px; overflow: auto; transform: none !important; }
           .services-heading h2 { flex-direction: column; gap: 0; white-space: normal; font-size: 34px; }
           .services-cta { position: absolute; right: 20px; top: 34px; padding: 12px; }
-          .services-panel { margin-top: 30px; min-height: 340px; padding: 22px 18px; }
-          .services-panel h3 { font-size: 43px; }
-          .services-index { height: 300px; margin-top: 14px; border-inline: 1px solid var(--border-primary); }
-          .services-orb-stage { height: 260px; margin-top: 14px; }
+          .services-panel { margin-top: 30px; min-height: 360px; padding: 22px 18px; }
+          .services-panel h3 { font-size: 40px; }
+          .services-orb-stage { height: 280px; }
+          .services-index { height: 300px; }
           .services-scope { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .services-copy, .services-number, .services-panel p, .services-line i, .services-scope { animation: none; }
+          .services-copy *, .roll *, .scope-item { animation: none !important; }
         }
       `}</style>
     </PinnedSection>

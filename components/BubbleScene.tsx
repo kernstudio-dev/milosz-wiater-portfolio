@@ -268,7 +268,7 @@ export function BubbleScene() {
       const local = smooth(wrapped - fromIndex);
       lerpPersonality(SERVICE_PERSONALITIES[fromIndex], SERVICE_PERSONALITIES[toIndex], local, serviceBlend);
       serviceColor.copy(servicePalette[fromIndex]).lerp(servicePalette[toIndex], local);
-      const serviceWeight = smooth((globalProgress - .43) / .07) * (1 - smooth((globalProgress - .76) / .07));
+      const serviceWeight = smooth((globalProgress - .385) / .045) * (1 - smooth((globalProgress - .735) / .05));
       samplePersonality(globalProgress, serviceBlend, personality);
 
       // ---- AMBIENT (time only) --------------------------------------------

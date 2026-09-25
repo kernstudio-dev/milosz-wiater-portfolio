@@ -46,23 +46,23 @@ export const CONTACT: OrbPersonality = {
 /** Services: the most expressive states. One per capability, same order as the content. */
 export const SERVICE_PERSONALITIES: (OrbPersonality & { color: string })[] = [
   // 01 web development — crisp, structured membrane with fine creases
-  { fold: .19, foldFreq: 1.15, warp: .5, ridge: .15, ridgeFreq: 3.1, detail: .014, detailFreq: 9,
-    flow: .05, ribbon: 0, volume: 0, shells: 0, speed: 1.05, pointScale: .98, color: '#62c9bb' },
+  { fold: .2, foldFreq: 1.1, warp: .5, ridge: .08, ridgeFreq: 2.6, detail: .008, detailFreq: 8,
+    flow: .04, ribbon: 0, volume: 0, shells: 0, speed: 1.05, pointScale: .98, color: '#62c9bb' },
   // 02 web applications — layered fibres, systemic flow
-  { fold: .17, foldFreq: 1.3, warp: .7, ridge: .07, ridgeFreq: 2.4, detail: .01, detailFreq: 8,
-    flow: .72, ribbon: 0, volume: 0, shells: .32, speed: 1.1, pointScale: 1, color: '#63a7ff' },
+  { fold: .16, foldFreq: 1.2, warp: .65, ridge: .04, ridgeFreq: 2.2, detail: .006, detailFreq: 7,
+    flow: .62, ribbon: 0, volume: 0, shells: 0, speed: 1.1, pointScale: 1, color: '#63a7ff' },
   // 03 product design — elegant petals / meridians
-  { fold: .16, foldFreq: .95, warp: .45, ridge: .08, ridgeFreq: 2.2, detail: .008, detailFreq: 7,
-    flow: .15, ribbon: .72, volume: 0, shells: 0, speed: .9, pointScale: 1.02, color: '#b15ee8' },
+  { fold: .16, foldFreq: .95, warp: .45, ridge: .06, ridgeFreq: 2.2, detail: .006, detailFreq: 7,
+    flow: .12, ribbon: .72, volume: 0, shells: 0, speed: .9, pointScale: 1.02, color: '#b15ee8' },
   // 04 motion & interaction — largest, fastest folding
-  { fold: .34, foldFreq: 1.25, warp: 1.05, ridge: .14, ridgeFreq: 2.5, detail: .018, detailFreq: 8.5,
-    flow: .3, ribbon: 0, volume: 0, shells: 0, speed: 1.55, pointScale: 1.04, color: '#ff7657' },
+  { fold: .34, foldFreq: 1.15, warp: 1, ridge: .07, ridgeFreq: 2.3, detail: .01, detailFreq: 8,
+    flow: .22, ribbon: 0, volume: 0, shells: 0, speed: 1.55, pointScale: 1.04, color: '#ff7657' },
   // 05 AI systems — neural dust core inside a crinkled skin
-  { fold: .2, foldFreq: 1.4, warp: .9, ridge: .1, ridgeFreq: 3.4, detail: .05, detailFreq: 11,
-    flow: .25, ribbon: 0, volume: .42, shells: 0, speed: 1.25, pointScale: .96, color: '#e8a933' },
-  // 06 automation — ordered, concentric, mechanical precision
-  { fold: .12, foldFreq: 1.05, warp: .35, ridge: .2, ridgeFreq: 2.8, detail: .01, detailFreq: 8,
-    flow: 0, ribbon: 0, volume: 0, shells: .66, speed: 1, pointScale: .95, color: '#f39b18' },
+  { fold: .17, foldFreq: 1.3, warp: .8, ridge: .06, ridgeFreq: 3, detail: .03, detailFreq: 10,
+    flow: .15, ribbon: 0, volume: .38, shells: 0, speed: 1.2, pointScale: .98, color: '#e8a933' },
+  // 06 automation — ordered meridian cage with nested layers, mechanical precision
+  { fold: .12, foldFreq: 1, warp: .35, ridge: .05, ridgeFreq: 2.4, detail: .005, detailFreq: 7,
+    flow: 0, ribbon: .5, volume: 0, shells: .38, speed: 1.1, pointScale: .96, color: '#f39b18' },
 ];
 
 export function lerpPersonality(a: OrbPersonality, b: OrbPersonality, t: number, target: OrbPersonality) {
@@ -86,10 +86,10 @@ const PATH: Stop[] = [
   { at: 0, preset: HERO },
   { at: .055, preset: HERO },
   { at: .115, preset: WORK },
-  { at: .37, preset: WORK },
-  { at: .46, preset: 'services' },
-  { at: .75, preset: 'services' },
-  { at: .83, preset: ABOUT },
+  { at: .35, preset: WORK },
+  { at: .425, preset: 'services' },
+  { at: .735, preset: 'services' },
+  { at: .795, preset: ABOUT },
   { at: .935, preset: ABOUT },
   { at: .99, preset: CONTACT },
 ];
