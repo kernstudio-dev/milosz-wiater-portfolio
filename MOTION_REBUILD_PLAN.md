@@ -113,3 +113,22 @@ Named presets interpolated along `globalProgress`. Services blend in the damped 
 
 ## Rollback
 Tags: `checkpoint/takeover`, `checkpoint/orb`, `checkpoint/services`, `checkpoint/selected-work`, `checkpoint/case-studies`, `checkpoint/final-motion`. On regression: `git checkout <tag> -- <files>`.
+
+## Implementation status & QA results (production build, headless Chrome)
+
+| Check | Result |
+|---|---|
+| One canvas, one orb | 1 canvas at every viewport |
+| Orb idle, no input, 1920×1080 / 1440×900 / 1366×768 | outline changes between T=0/3/6 s (1−IoU ≈ .12–.17 per 3 s vs ≈ .08–.16 edge-fuzz baseline); visibly different silhouettes, calm over 20 s, dark + light |
+| Pointer | world-space swell stays under cursor, damped lean |
+| Personalities | Hero membrane · Work fibres (project tint) · 6 distinct Services forms · About lantern · Contact nested shells |
+| Services idle | 01→02→…→06→01 every ≈4.5 s, scrollY constant |
+| Services scroll fwd/back | display always moves in scroll direction; autoplay yields on any wheel input; autoOffset resets only when the scene is off screen |
+| Selected Work | 5/5 thumbnails, prev/next, VIEW cursor, scroll mapping, click → correct /work route via shared-media transition |
+| Scene transitions | Hero→Work→Services→About→Contact choreographed inside one fixed frame; retrace cleanly on reverse scroll |
+| Case studies | WBTrade, Jarvis/Odkutka, WBRent, Eclipse Ink scrolled fully; next project opens correct route at scroll 0; back returns to the same project in Selected Work, no loader replay |
+| EN/PL, dark/light | homepage + case studies |
+| Reload mid-page | deterministic start at top, Hero orb state |
+| `next build` | passes, 5 case studies statically generated |
+
+Known limits: headless QA uses SwiftShader, so frame-rate numbers are not representative; verify fps on a real GPU (the vertex shader evaluates ~16 simplex samples per point, 62k points desktop / 26k mobile). Case-study copy in `data/caseStudies.ts` is drafted from existing project descriptions and should be reviewed by Miłosz.
