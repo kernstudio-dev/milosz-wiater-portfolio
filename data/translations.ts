@@ -103,6 +103,12 @@ export type Dictionary = {
     switchTheme: string;
     switchLanguage: string;
     scroll: string;
+    approach: string;
+    build: string;
+    deliverables: string;
+    year: string;
+    allWork: string;
+    viewNext: string;
   };
   projects: Record<string, ProjectCopy>;
 };
@@ -153,6 +159,7 @@ const en: Dictionary = {
     detail: 'DETAIL MOMENT', detailTitle: 'A system revealed through interaction.', detailCopy: 'Focused crops expose the interface logic, material decisions and small responses that give the product its character.',
     role: 'ROLE', technology: 'TECHNOLOGY', process: 'PROCESS', finalExperience: 'Final experience', nextProject: 'NEXT PROJECT', opening: 'Opening project',
     switchTheme: 'Switch color theme', switchLanguage: 'Switch language', scroll: 'SCROLL',
+    approach: 'APPROACH', build: 'THE BUILD', deliverables: 'DELIVERABLES', year: 'YEAR', allWork: 'All projects', viewNext: 'Open next project',
   },
   projects: {
     'eclipse-ink': { category: 'DIGITAL EXPERIENCE / 3D WEB', subtitle: 'Interactive 3D WebGL Fluid Exploration & Creative Direction', description: 'High-performance WebGL digital artifact featuring liquid chrome physics, custom GLSL vertex shaders, and interactive camera dynamics.', longDescription: 'Eclipse Ink is an experimental creative-development study built around responsive liquid form, light and movement. Custom shaders and scroll choreography turn an abstract material into a tactile, cinematic web experience.', role: 'Lead Creative Developer & Shader Architect', deliverables: ['Custom GLSL Fluid Shaders', 'Physics Simulation Engine', 'Sound Design Integration', 'Responsive Viewport Pipeline'], mediaAlt: 'Eclipse Ink 3D WebGL fluid experience' },
@@ -209,6 +216,7 @@ const pl: Dictionary = {
     detail: 'MOMENT DETALU', detailTitle: 'System odsłaniany przez interakcję.', detailCopy: 'Precyzyjne kadry pokazują logikę interfejsu, decyzje materiałowe i drobne reakcje, które nadają produktowi charakter.',
     role: 'ROLA', technology: 'TECHNOLOGIA', process: 'PROCES', finalExperience: 'Finalne doświadczenie', nextProject: 'NASTĘPNY PROJEKT', opening: 'Otwieranie projektu',
     switchTheme: 'Zmień motyw kolorystyczny', switchLanguage: 'Zmień język', scroll: 'PRZEWIŃ',
+    approach: 'PODEJŚCIE', build: 'REALIZACJA', deliverables: 'ZAKRES', year: 'ROK', allWork: 'Wszystkie projekty', viewNext: 'Otwórz następny projekt',
   },
   projects: {
     'eclipse-ink': { category: 'DOŚWIADCZENIE CYFROWE / 3D WEB', subtitle: 'Interaktywna eksploracja płynnego WebGL 3D i kierunek kreatywny', description: 'Wydajny artefakt WebGL łączący fizykę płynnego chromu, autorskie shadery GLSL i interaktywną kamerę.', longDescription: 'Eclipse Ink to eksperymentalne studium creative developmentu zbudowane wokół responsywnej formy, światła i ruchu. Autorskie shadery oraz choreografia scrolla zmieniają abstrakcyjny materiał w dotykowe, filmowe doświadczenie.', role: 'Lead Creative Developer i architekt shaderów', deliverables: ['Autorskie shadery płynów GLSL', 'Silnik symulacji fizyki', 'Integracja warstwy dźwiękowej', 'Responsywny pipeline viewportu'], mediaAlt: 'Płynne doświadczenie WebGL 3D Eclipse Ink' },

@@ -76,7 +76,8 @@ export function TransitionProvider({ children }: { children: React.ReactNode }) 
   const go = useCallback((href: string) => {
     const target = href.split('#')[0] || '/';
     const startedAt = performance.now();
-    router.push(href, { scroll: !href.includes('#') });
+    // Destination pages own their initial scroll position (see app/page.tsx, ProjectStory).
+    router.push(href, { scroll: false });
     // Safety net: if the destination mounted but never reported ready, reveal it.
     // While the old route is still on screen (slow network / compile) keep holding,
     // with a hard cap so the cover can never get stuck.

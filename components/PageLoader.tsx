@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 
+// The intro plays once per page load; client-side returns to the homepage skip it.
+let hasPlayed = false;
+
 interface PageLoaderProps {
   onComplete?: () => void;
 }
 
 export function PageLoader({ onComplete }: PageLoaderProps) {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => !hasPlayed);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -17,9 +20,14 @@ export function PageLoader({ onComplete }: PageLoaderProps) {
     const finish = () => {
       if (finished) return;
       finished = true;
+      hasPlayed = true;
       setVisible(false);
       onCompleteRef.current?.();
     };
+    if (hasPlayed) {
+      finish();
+      return;
+    }
 
     const tl = gsap.timeline({ onComplete: finish });
 

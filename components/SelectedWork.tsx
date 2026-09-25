@@ -16,6 +16,12 @@ const SCROLL_START = 1 / 6;
 const SCROLL_END = .8;
 const SWITCH_MS = 1150;
 
+/** Section progress at which the viewer rests on project `index` (used when returning from a case study). */
+export function workProgressForProject(index: number) {
+  const clamped = Math.max(0, Math.min(COUNT - 1, index));
+  return SCROLL_START + (clamped / (COUNT - 1)) * (SCROLL_END - SCROLL_START) + .004;
+}
+
 export function SelectedWork() {
   const { openProject, prefetch } = usePageTransition();
   const projectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
