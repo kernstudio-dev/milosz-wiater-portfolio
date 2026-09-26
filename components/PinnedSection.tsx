@@ -34,10 +34,13 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
   const [portrait, setPortrait] = useState<PortraitGeometry | null>(null);
   const heightVh = SECTION_HEIGHT_VH[id];
   const isPinnedLayout = Boolean(gridMetrics?.isPinned);
-  const isPortrait = gridMetrics?.layout === 'portrait';
+  // measured layouts: the orb window and route station are measured from the DOM
+  const isPortrait = gridMetrics?.layout === 'portrait' || gridMetrics?.layout === 'landscape';
+  const isLandscape = gridMetrics?.layout === 'landscape';
   const overlapsPrevious = isPinnedLayout && id !== 'hero';
   // Portrait: the closing scene is ordinary flow, as tall as its content.
-  const flowsNaturally = isPortrait && !pinned;
+  // Landscape phones: every scene is — no tall pinned scenes on a short screen.
+  const flowsNaturally = isPortrait && (!pinned || isLandscape);
 
   // Overlap-window progress (see lib/sceneTiming.ts).
   const enter = enterProgress(id, scroll.progress);
@@ -114,7 +117,7 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
     const aperture = block * (6.25 + travel.transition * .9);
     hole = {
       x: orbX - aperture / 2,
-      y: travel.row * block - aperture / 2,
+      y: gridMetrics.yOffset + travel.row * block - aperture / 2,
       width: aperture,
       height: aperture,
     };
@@ -138,14 +141,14 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
       <div className={overlapsPrevious ? 'pinning-lead' : 'pinning-lead pinning-lead--flow'}>
         <div
           ref={containerRef}
-          className={pinned || overlapsPrevious ? 'pinning-container' : 'pinning-container pinning-container--relative'}
+          className={(pinned || overlapsPrevious) && !flowsNaturally ? 'pinning-container' : 'pinning-container pinning-container--relative'}
           style={{
             display: sceneVisible ? undefined : 'none',
             opacity: sceneOpacity,
             pointerEvents: sceneOpacity > .5 ? 'auto' : 'none',
           }}
         >
-          {gridMetrics && <SectionGrid metrics={gridMetrics} bubbleHole={sceneVisible ? hole : null} rows={portrait?.rows} />}
+          {gridMetrics && <SectionGrid metrics={gridMetrics} bubbleHole={sceneVisible ? hole : null} rows={portrait?.rows ?? gridMetrics.rows} />}
           {gridMetrics && sceneVisible && (
             <RouteMap
               id={id}

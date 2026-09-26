@@ -21,7 +21,8 @@ export function useLenis(enabled = true) {
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 0.9,
+      // one wheel notch covers the same share of a scene on taller screens
+      wheelMultiplier: 0.9 * Math.min(1.6, Math.max(1, window.innerHeight / 1080)),
     });
 
     lenisRef.current = lenis;

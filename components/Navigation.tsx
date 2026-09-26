@@ -55,6 +55,8 @@ export function Navigation() {
         :global(html[data-layout='portrait']) .site-nav { padding-top: env(safe-area-inset-top); height: calc(var(--header-height) + env(safe-area-inset-top)); }
         :global(html[data-layout='portrait']) .nav-overlay nav button { font-size: clamp(38px, 11vw, 72px); padding: 6px 0; }
         :global(html[data-layout='portrait']) .nav-overlay p { bottom: calc(28px + env(safe-area-inset-bottom)); }
+        :global(html[data-layout='landscape']) .nav-overlay nav button { font-size: clamp(30px, 8svh, 56px); padding: 2px 0; }
+        :global(html[data-layout='landscape']) .nav-overlay p { bottom: calc(16px + env(safe-area-inset-bottom)); }
       `}</style>
     </>
   );

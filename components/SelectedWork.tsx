@@ -31,7 +31,9 @@ export function SelectedWork() {
   const changeId = useRef(0);
   const { progress, enter, leave: leaveWindow } = useScene('work');
   const progressRef = useRef(progress);
-  const { setWorkProjectColor } = useBubble();
+  const { setWorkProjectColor, gridMetrics } = useBubble();
+  // landscape phones: the scene is plain flow, projects change by touch only
+  const flowScene = gridMetrics?.layout === 'landscape';
   const { dictionary } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const [previous, setPrevious] = useState<{ index: number; direction: 1 | -1; id: number } | null>(null);
@@ -79,8 +81,9 @@ export function SelectedWork() {
   useEffect(() => {
     if (manualProgress.current !== null && Math.abs(progress - manualProgress.current) < .06) return;
     manualProgress.current = null;
+    if (flowScene) return;
     selectProject(scrollIndex, false);
-  }, [progress, scrollIndex, selectProject]);
+  }, [progress, scrollIndex, selectProject, flowScene]);
 
   useEffect(() => setWorkProjectColor(COLORS[activeIndex]), [activeIndex, setWorkProjectColor]);
   useEffect(() => { prefetch(`/work/${PROJECTS[activeIndex].id}`); }, [activeIndex, prefetch]);
@@ -88,7 +91,8 @@ export function SelectedWork() {
 
   // Portrait: the thumbnail strip scrolls sideways; keep the active one in view.
   useEffect(() => {
-    if (document.documentElement.dataset.layout !== 'portrait') return;
+    const layout = document.documentElement.dataset.layout;
+    if (layout !== 'portrait' && layout !== 'landscape') return;
     const strip = stripRef.current;
     const thumb = strip?.querySelectorAll('button')[activeIndex] as HTMLElement | undefined;
     if (!strip || !thumb) return;
@@ -417,6 +421,41 @@ export function SelectedWork() {
         @media (prefers-reduced-motion: reduce) {
           .media-layer, .media-layer img, .roll *, .work-title *, .copy-in, .cap-in { animation: none !important; }
         }
+
+        /* ---------------------------------------------------------- landscape phone
+           heading · orb | dominant media / index · title · copy | strip / controls */
+        :global(html[data-layout='landscape']) .work-layout {
+          display: grid; height: auto; min-height: 100svh;
+          grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) minmax(0, 7fr);
+          grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+          column-gap: 16px; row-gap: 8px; padding: calc(var(--grid-block-size) + 12px) 0 calc(14px + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='landscape']) .work-heading { grid-column: 1; grid-row: 1; padding: 0; align-self: start; }
+        :global(html[data-layout='landscape']) .work-heading h2 { font-size: clamp(20px, 3.4vw, 34px); line-height: 1; }
+        :global(html[data-layout='landscape']) .work-heading p, :global(html[data-layout='landscape']) .work-cta { display: none; }
+        :global(html[data-layout='landscape']) .work-orb-slot { display: block; grid-column: 2; grid-row: 1 / 3; min-height: calc(var(--grid-block-size) * 1.6); }
+        :global(html[data-layout='landscape']) .work-info { display: contents; }
+        :global(html[data-layout='landscape']) .work-index { grid-column: 1; grid-row: 2; align-self: end; font-size: clamp(28px, 4.6vw, 46px); }
+        :global(html[data-layout='landscape']) .work-title-stage { grid-column: 1 / 3; grid-row: 3; margin: 0; min-height: 0; font-size: clamp(18px, 3vw, 30px); }
+        :global(html[data-layout='landscape']) .work-copy { grid-column: 1 / 3; grid-row: 4; margin: 0; min-height: 0; overflow: hidden; }
+        :global(html[data-layout='landscape']) .work-copy p { -webkit-line-clamp: 3; font-size: 13px; }
+        :global(html[data-layout='landscape']) .work-copy ul { display: none; }
+        :global(html[data-layout='landscape']) .work-viewport { grid-column: 3; grid-row: 1 / 5; aspect-ratio: 16 / 10; align-self: start; }
+        :global(html[data-layout='landscape']) .work-scrubber {
+          grid-column: 3; grid-row: 5; padding: 0 0 8px; height: auto;
+          overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-snap-type: x proximity;
+        }
+        :global(html[data-layout='landscape']) .work-scrubber::-webkit-scrollbar { display: none; }
+        :global(html[data-layout='landscape']) .scrub-track { display: flex; gap: 0; width: max-content; height: calc(var(--grid-block-size) * .82); }
+        :global(html[data-layout='landscape']) .scrub-track button { flex: 0 0 calc(var(--grid-block-size) * 1.46); padding-right: 6px; background: none; scroll-snap-align: start; }
+        :global(html[data-layout='landscape']) .scrub-track img { background: #0b0b0c; }
+        :global(html[data-layout='landscape']) .scrub-indicator { width: calc(var(--grid-block-size) * 1.46); margin: 0; bottom: -7px; background: linear-gradient(90deg, var(--text-primary) calc(100% - 6px), transparent 0); }
+        :global(html[data-layout='landscape']) .work-controls { grid-column: 1; grid-row: 5; height: 48px; }
+        :global(html[data-layout='landscape']) .work-open { grid-column: 2; grid-row: 5; margin: 0; height: 48px; padding: 0 10px; font-size: 10px; }
+        :global(html[data-layout='landscape']) .open-desktop { display: none; }
+        :global(html[data-layout='landscape']) .open-portrait { display: inline; }
+        :global(html[data-layout='landscape']) .work-station { display: flex; grid-column: 1 / -1; grid-row: 6; }
+        :global(html[data-layout='landscape']) .work-title { padding: 9px 0; margin: -9px 0; }
       `}</style>
     </PinnedSection>
   );

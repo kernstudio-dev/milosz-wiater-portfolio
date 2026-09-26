@@ -113,16 +113,17 @@ function PortraitRoute({ id, metrics, hole, portrait }: { id: SectionId; metrics
 
 export function RouteMap({ id, metrics, hole, enter, leave, portrait }: RouteMapProps) {
   const { dictionary } = useLanguage();
-  if (metrics.layout === 'portrait') {
+  if (metrics.layout === 'portrait' || metrics.layout === 'landscape') {
     return portrait ? <PortraitRoute id={id} metrics={metrics} hole={hole} portrait={portrait} /> : null;
   }
   if (!metrics.isPinned) return null;
 
   const { blockSize: bs, sectionCols: cols, xOffset } = metrics;
   const width = xOffset * 2 + cols * bs;
-  const height = 12 * bs;
+  // the frame is the full viewport; the 12 rows sit yOffset below its top
+  const height = typeof window !== 'undefined' ? Math.ceil(window.innerHeight) : 12 * bs;
   const X = (c: number) => Math.round(xOffset + c * bs) + .5;
-  const Y = (r: number) => Math.round(r * bs) + .5;
+  const Y = (r: number) => Math.round(metrics.yOffset + r * bs) + .5;
   const all = stations(cols);
   const s = all[id];
   const next = NEXT[id];

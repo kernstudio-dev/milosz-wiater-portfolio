@@ -29,7 +29,9 @@ export function useWindowSize(onMetrics?: (m: GridMetrics) => void): WindowSize 
       document.documentElement.style.setProperty('--grid-max-width', `${metrics.maxWidth}px`);
       document.documentElement.style.setProperty('--grid-x-offset', `${metrics.xOffset}px`);
       document.documentElement.style.setProperty('--header-height', `${metrics.blockSize}px`);
+      document.documentElement.style.setProperty('--grid-y-offset', `${metrics.yOffset}px`);
       document.documentElement.dataset.layout = metrics.layout;
+      document.documentElement.dataset.gridCols = String(metrics.sectionCols);
 
       onMetrics?.(metrics);
 

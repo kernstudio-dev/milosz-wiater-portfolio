@@ -10,7 +10,9 @@
  */
 
 .page {
-  --pad: clamp(20px, 3.4vw, 64px);
+  /* the margin grows on ultrawide screens so content never exceeds 2200px;
+     rail, chapter markers, header and Next Project all follow it */
+  --pad: max(clamp(20px, 3.4vw, 64px), (100vw - 2200px) / 2);
   --gap: clamp(16px, 2vw, 32px);
   --section-y: clamp(96px, 15vh, 176px);
   --ease: cubic-bezier(.16, 1, .3, 1);
@@ -514,7 +516,7 @@
 /* upright tablets keep the desktop chapters, but take the portrait versions
    of the three image-led scenes (full-bleed crops of a 16:9 interface do not
    work on a tall screen) */
-@media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+@media (min-width: 768px) and (orientation: portrait) {
   .heroMedia {
     clip-path: inset(
       calc(var(--ps, 0) * (100svh - var(--hero-fit, .3) * 100svh) / 2)
@@ -545,6 +547,70 @@
   .nextMeta { left: var(--pad); right: var(--pad); top: auto; bottom: 52px; }
   .nextMeta i { margin-left: auto; }
   .nextRoute { width: calc(var(--pad) * .5 + 1px); }
+}
+
+/* short landscape (phones sideways): the scenes are the desktop ones, sized to
+   a 320–430px tall screen; Next Project places title and preview side by side */
+@media (orientation: landscape) and (max-height: 540px) {
+  .page { --pad: max(24px, env(safe-area-inset-left), env(safe-area-inset-right)); --section-y: clamp(56px, 16svh, 88px); }
+  .header { height: 52px; }
+  .headerControls { gap: 4px; margin-right: -10px; }
+  .control, .back { min-width: 44px; min-height: 44px; justify-content: center; padding: 0 6px; }
+  .brand { display: inline-flex; align-items: center; min-height: 44px; }
+  .hero { height: 170svh; }
+  .kicker { font-size: 10px; padding-bottom: 8px; }
+  .heroTitle { font-size: min(18svh, 11vw, 96px); margin-top: 10px; }
+  .heroFoot { margin-top: 10px; }
+  .subtitle { font-size: 14px; }
+  .scrollCue { display: none; }
+  .challenge { height: 200svh; }
+  .challengeCopy { column-gap: 5vw; }
+  .challengeCopy h2 { margin-top: 14px; font-size: clamp(24px, 4.2vw, 42px); }
+  .challengeCopy p { margin-top: 14px; padding-top: 12px; font-size: 14px; line-height: 1.5; }
+  .challengeMedia img { transform: scale(calc(1.18 - var(--ps, 0) * .18)); }
+  .approachTitle { font-size: clamp(30px, 5.4vw, 56px); margin-top: 24px; }
+  .approachGrid { margin-top: 32px; }
+  .next {
+    height: 190svh; margin-top: 0;
+    --title-size: min(calc((48vw - var(--pad)) / (var(--chars, 8) * .7)), 12svh, 64px);
+    --preview-left: 50vw;
+    --preview-top: calc(96px + (1 - var(--ps, 0)) * 4svh);
+    --preview-bottom: calc(96px + (1 - var(--ps, 0)) * 4svh);
+  }
+  .nextHead, .nextCount { top: 64px; }
+  .nextCount { display: block; }
+  .nextNumber { top: 96px; font-size: 28svh; left: calc(var(--pad) - .04em); right: auto; }
+  .nextPreview { inset: var(--preview-top) calc(var(--pad) + (1 - var(--ps, 0)) * 3vw) var(--preview-bottom) var(--preview-left) !important; }
+  .nextTitle { right: calc(50vw + 16px); bottom: 56px; line-height: .92; }
+  .nextTitle .line > span { white-space: normal; }
+  .nextMeta { left: 50vw; right: var(--pad); top: auto; bottom: 56px; gap: 10px; font-size: 10px; }
+  .nextMeta i { margin-left: auto; font-size: 16px; }
+  .nextFoot { bottom: 14px; font-size: 10px; }
+  .nextFoot a { display: inline-flex; align-items: center; min-height: 44px; margin: -14px 0; }
+  .nextRoute { width: calc(50vw - var(--pad) * .5); }
+}
+
+/* sideways phones/tablets from 768px wide keep the desktop chapters, compacted */
+@media (orientation: landscape) and (max-height: 540px) and (min-width: 768px) {
+  .statement { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .statementHead { margin-bottom: 24px; }
+  .statementAside { grid-column: 1 / 3; }
+  .statementCategory { display: none; }
+  .statementIndex { font-size: clamp(40px, 11svh, 64px); }
+  .statementText { grid-column: 3 / 10; font-size: clamp(20px, 3.2vw, 34px); }
+  .detail { grid-column: 10 / -1; margin: 0; align-self: start; }
+  .facts { margin-top: 40px; }
+  .systemSticky { padding-top: 60px; gap: 12px; }
+  .systemHead { padding-bottom: 8px; }
+  .systemCount { font-size: 24px; }
+  .bpFrame { max-height: calc(100svh - 150px); }
+  .bpList li { padding: 8px 0; }
+  .bpList h3 { font-size: 16px; }
+  .bpList p { display: none; }
+  .browser { width: min(62vw, calc((100svh - 120px) * 1.66)); }
+  .resultCard { width: min(360px, 34vw); padding: 16px 18px; bottom: 24px; }
+  .resultCard p { font-size: clamp(16px, 2.4vw, 24px); margin-top: 10px; }
+  .resultMeta { margin-top: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

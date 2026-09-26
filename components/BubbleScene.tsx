@@ -277,11 +277,11 @@ export function BubbleScene() {
       const visibleHeight = 2 * Math.tan((CAMERA_FOV * Math.PI) / 360) * CAMERA_DISTANCE;
       const worldPerPixel = visibleHeight / height;
       let x = travel.anchor < 0 ? lerp(centerX, workX, -travel.anchor) : lerp(centerX, rightX, travel.anchor);
-      let y = height < 700 ? height * 0.5 : bs * travel.row;
+      let y = height < 700 ? height * 0.5 : (gridMetrics?.yOffset ?? 0) + bs * travel.row;
       let scale = productionScale(bs, height) * travel.scale;
       // Portrait: the orb lives in each scene's measured window (position and
       // size only — shape, shader and personality are unchanged).
-      if (gridMetrics?.layout === 'portrait') {
+      if (gridMetrics?.layout === 'portrait' || gridMetrics?.layout === 'landscape') {
         const target = portraitTarget(getLiveScroll().scrollY, height);
         if (target) {
           x = target.x;

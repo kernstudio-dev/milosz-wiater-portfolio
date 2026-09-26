@@ -66,6 +66,11 @@ export function TechPhilosophy() {
           :global(html[data-layout='flow']) .about-ticker { height: 90px; }
         }
         .about-orb-slot, .about-station { display: none; }
+        /* 16-column desktops (4:3, 16:10, tablets sideways): leave the middle six
+           columns to the orb */
+        :global(html[data-layout='pinned'][data-grid-cols='16']) .about-copy { grid-column: 1 / 6; padding: 60px 36px; }
+        :global(html[data-layout='pinned'][data-grid-cols='16']) .about-portrait { grid-column: -6 / -1; }
+        :global(html[data-layout='pinned'][data-grid-cols='16']) .about-ticker { grid-column: 1 / -6; }
 
         /* ---------------------------------------------------------- portrait
            ABOUT / statement / orb window | portrait / stack / 04 station */
@@ -89,6 +94,26 @@ export function TechPhilosophy() {
         @media (max-height: 620px) {
           :global(html[data-layout='portrait']) .about-copy { font-size: 15px; padding: 12px 14px; }
         }
+
+        /* ---------------------------------------------------------- landscape phone
+           ABOUT / statement | orb window | portrait / stack */
+        :global(html[data-layout='landscape']) .about-layout {
+          display: grid; height: auto; min-height: 100svh;
+          grid-template-columns: minmax(0, 5fr) minmax(0, 3fr) minmax(0, 3fr); grid-template-rows: auto minmax(0, 1fr) auto auto;
+          column-gap: 16px; row-gap: 10px; padding: calc(var(--grid-block-size) + 12px) 0 calc(14px + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='landscape']) .about-heading { grid-column: 1 / -1; grid-row: 1; }
+        :global(html[data-layout='landscape']) .about-heading h2 { font-size: clamp(22px, 3.6vw, 36px); }
+        :global(html[data-layout='landscape']) .about-heading p { font-size: 12px; }
+        :global(html[data-layout='landscape']) .about-cta { display: none; }
+        :global(html[data-layout='landscape']) .about-copy { grid-column: 1; grid-row: 2; align-self: stretch; padding: 16px 18px; font-size: clamp(14px, 2.1vw, 19px); line-height: 1.35; }
+        :global(html[data-layout='landscape']) .about-orb-slot { display: block; grid-column: 2; grid-row: 2; min-height: 0; }
+        :global(html[data-layout='landscape']) .about-portrait { grid-column: 3; grid-row: 2; margin: 0; min-height: 0; max-height: 62svh; }
+        :global(html[data-layout='landscape']) .about-ticker { grid-column: 1 / -1; grid-row: 3; height: 46px; }
+        :global(html[data-layout='landscape']) .about-ticker > div { gap: 36px; }
+        :global(html[data-layout='landscape']) .about-ticker span { font-size: 12px; }
+        :global(html[data-layout='landscape']) .about-ticker small { display: none; }
+        :global(html[data-layout='landscape']) .about-station { display: flex; grid-column: 1 / -1; grid-row: 4; }
       `}</style>
     </PinnedSection>
   );

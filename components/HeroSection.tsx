@@ -159,6 +159,27 @@ export function HeroSection() {
         /* touch: the label links keep their look but get a 44px hit area */
         :global(html[data-layout='portrait']) .hero-label a, :global(html[data-layout='portrait']) a.hero-label { position: relative; }
         :global(html[data-layout='portrait']) .hero-label a::after, :global(html[data-layout='portrait']) a.hero-label::after { content: ''; position: absolute; inset: -15px -6px; }
+
+        /* ---------------------------------------------------------- landscape phone
+           orb window | labels / SHAPING CONCEPTS / BUILDING EXPERIENCES / labels */
+        :global(html[data-layout='landscape']) .hero-layout {
+          display: grid; min-height: 100svh; height: auto;
+          grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) auto auto;
+          column-gap: 24px; row-gap: 8px; padding: calc(var(--grid-block-size) + 12px) 0 calc(14px + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='landscape']) .hero-label { white-space: normal; font-size: 11px; line-height: 1.35; }
+        :global(html[data-layout='landscape']) .hero-label--top-left { grid-column: 1; grid-row: 1; }
+        :global(html[data-layout='landscape']) .hero-label--top-right { grid-column: 2; grid-row: 1; justify-self: end; text-align: right; }
+        :global(html[data-layout='landscape']) .hero-words { font-size: clamp(26px, 5.4vw, 52px); line-height: 1.02; }
+        :global(html[data-layout='landscape']) .hero-words--left { grid-column: 2; grid-row: 2; align-self: end; }
+        :global(html[data-layout='landscape']) .hero-words--right { grid-column: 2; grid-row: 3; align-self: start; align-items: flex-end; }
+        :global(html[data-layout='landscape']) .hero-orb-slot { display: block; grid-column: 1; grid-row: 2 / 4; min-height: 0; }
+        :global(html[data-layout='landscape']) .hero-label--bottom-left { grid-column: 1; grid-row: 4; gap: 4px; }
+        :global(html[data-layout='landscape']) .hero-label--bottom-right { grid-column: 2; grid-row: 4; justify-self: end; align-self: end; text-align: right; }
+        :global(html[data-layout='landscape']) .hero-station { display: flex; grid-column: 1 / -1; grid-row: 5; }
+        :global(html[data-layout='landscape']) .hero-orb-frame { display: none; }
+        :global(html[data-layout='landscape']) .hero-label a, :global(html[data-layout='landscape']) a.hero-label { position: relative; }
+        :global(html[data-layout='landscape']) .hero-label a::after, :global(html[data-layout='landscape']) a.hero-label::after { content: ''; position: absolute; inset: -15px -6px; }
       `}</style>
     </PinnedSection>
   );

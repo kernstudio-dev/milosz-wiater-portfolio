@@ -26,7 +26,7 @@ function cellCenterInHole(colLeft: number, rowTop: number, bs: number, hole: Pla
  * re-renders when that set actually changes.
  */
 export function SectionGrid({ metrics, bubbleHole, rows: rowsOverride }: SectionGridProps) {
-  const { blockSize: bs, sectionCols, xOffset } = metrics;
+  const { blockSize: bs, xOffset } = metrics;
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const totalCols = Math.ceil((vw + bs) / bs) + 1;
   // Lines pass through the content edges. (Desktop: xOffset ≡ vw/2 mod bs,
@@ -40,15 +40,11 @@ export function SectionGrid({ metrics, bubbleHole, rows: rowsOverride }: Section
       for (let c = 0; c < totalCols; c++) {
         const left = leftEdge + c * bs;
         const top = r * bs;
-        const inSection =
-          left >= xOffset - bs &&
-          left < xOffset + sectionCols * bs + bs;
-        if (!inSection) continue;
         result.push({ key: `${r}-${c}`, left, top });
       }
     }
     return result;
-  }, [bs, totalCols, leftEdge, xOffset, sectionCols, rows]);
+  }, [bs, totalCols, leftEdge, rows]);
 
   let mask = '';
   for (const cell of cells) {

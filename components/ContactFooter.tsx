@@ -16,7 +16,7 @@ export function ContactFooter() {
   const { gridMetrics } = useBubble();
   // Portrait: the closing scene is ordinary flow as tall as its content, so a
   // reveal tied to section progress would keep visible blocks hidden.
-  const portrait = gridMetrics?.layout === 'portrait';
+  const portrait = gridMetrics?.layout === 'portrait' || gridMetrics?.layout === 'landscape';
   const reveal = (delay: number) => (portrait ? 1 : smooth((enter - .45 - delay) / .32));
 
   return (
@@ -107,6 +107,29 @@ export function ContactFooter() {
         :global(html[data-layout='portrait']) .footer-legal { height: max(52px, calc(var(--grid-block-size) * .92)); }
         :global(html[data-layout='portrait']) .footer-legal span { padding: 0 14px; font-size: 12px; }
         :global(html[data-layout='portrait']) .footer-contact a { padding: 12px 0; margin: -12px 0; }
+
+        /* ---------------------------------------------------------- landscape phone
+           orb window · END / contact · information | form */
+        :global(html[data-layout='landscape']) .footer-layout {
+          display: grid; height: auto; overflow: visible;
+          grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: none; grid-auto-rows: auto;
+          column-gap: 20px; row-gap: 12px; padding: calc(var(--grid-block-size) + 16px) 0 calc(24px + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='landscape']) .footer-orb-slot { display: block; grid-column: 1; grid-row: 1; aspect-ratio: 1; width: 100%; max-height: 48svh; justify-self: center; }
+        :global(html[data-layout='landscape']) .footer-station { display: block; grid-column: 1; grid-row: 2; height: auto; padding: 8px 0 0 16px; }
+        :global(html[data-layout='landscape']) .footer-station em { font-style: normal; margin-left: 1em; color: var(--text-primary); }
+        :global(html[data-layout='landscape']) .footer-contact { grid-column: 1; grid-row: 3; }
+        :global(html[data-layout='landscape']) .footer-info { grid-column: 1; grid-row: 4; }
+        :global(html[data-layout='landscape']) .footer-legal { grid-column: 1; grid-row: 5; height: 52px; }
+        :global(html[data-layout='landscape']) .footer-form-wrap { grid-column: 2; grid-row: 1 / 6; padding-top: 18px; }
+        :global(html[data-layout='landscape']) .footer-contact, :global(html[data-layout='landscape']) .footer-info { padding: 16px 18px; gap: 10px; }
+        :global(html[data-layout='landscape']) .footer-form-wrap h2 { padding: 0 16px 14px; }
+        :global(html[data-layout='landscape']) form { height: auto; grid-template-rows: none; }
+        :global(html[data-layout='landscape']) input { height: 52px; padding: 0 16px; }
+        :global(html[data-layout='landscape']) textarea { min-height: 120px; padding: 14px 16px; }
+        :global(html[data-layout='landscape']) button { height: 52px; }
+        :global(html[data-layout='landscape']) .footer-legal span { padding: 0 14px; font-size: 12px; }
+        :global(html[data-layout='landscape']) .footer-contact a { padding: 12px 0; margin: -12px 0; }
       `}</style>
     </PinnedSection>
   );

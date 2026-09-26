@@ -32,7 +32,7 @@ const TRANSITION_MS = 1150;
  */
 export function ServicesIndex() {
   const { scroll, progress, enter, leave } = useScene('services');
-  const { setActiveServiceIndex } = useBubble();
+  const { setActiveServiceIndex, gridMetrics } = useBubble();
   const { dictionary } = useLanguage();
   const layoutRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<HTMLElement>(null);
@@ -47,7 +47,8 @@ export function ServicesIndex() {
   const changeId = useRef(0);
 
   const slotProgress = clamp01((progress - SLOT_START) / (SLOT_END - SLOT_START));
-  const scrollSlot = Math.min(COUNT - 1, Math.floor(slotProgress * COUNT));
+  // landscape phones: the scene is plain flow, so scroll does not pick the slot
+  const scrollSlot = gridMetrics?.layout === 'landscape' ? 0 : Math.min(COUNT - 1, Math.floor(slotProgress * COUNT));
   const sceneActive = inViewport && enter > .95 && leave < .04;
   const displayed = mod(scrollSlot + autoOffset, COUNT);
   const service = dictionary.services.items[displayed];
@@ -374,6 +375,30 @@ export function ServicesIndex() {
         @media (prefers-reduced-motion: reduce) {
           .services-copy *, .roll *, .scope-item { animation: none !important; }
         }
+
+        /* ---------------------------------------------------------- landscape phone
+           heading / orb window | number · title · description · timer */
+        :global(html[data-layout='landscape']) .services-layout {
+          display: grid; height: auto; min-height: 100svh;
+          grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto;
+          column-gap: 20px; row-gap: 10px; padding: calc(var(--grid-block-size) + 12px) 0 calc(14px + env(safe-area-inset-bottom));
+        }
+        :global(html[data-layout='landscape']) .services-heading { grid-column: 1 / -1; grid-row: 1; padding: 0; }
+        :global(html[data-layout='landscape']) .services-heading p { display: none; }
+        :global(html[data-layout='landscape']) .services-heading h2 { font-size: clamp(20px, 3.4vw, 34px); flex-wrap: wrap; column-gap: .28em; white-space: normal; }
+        :global(html[data-layout='landscape']) .services-cta, :global(html[data-layout='landscape']) .services-index, :global(html[data-layout='landscape']) .services-scope, :global(html[data-layout='landscape']) .stage-label { display: none; }
+        :global(html[data-layout='landscape']) .services-orb-stage { grid-column: 1; grid-row: 2; min-height: 0; border: 0; }
+        :global(html[data-layout='landscape']) .services-panel { grid-column: 2; grid-row: 2; align-self: center; padding: 14px 18px; }
+        :global(html[data-layout='landscape']) .services-number { font-size: clamp(26px, 4.2vw, 40px); }
+        :global(html[data-layout='landscape']) .services-nav button { width: 44px; height: 44px; font-size: 16px; }
+        :global(html[data-layout='landscape']) .services-copy-stage { display: grid; flex: none; margin-top: 10px; }
+        :global(html[data-layout='landscape']) .services-copy { position: relative; inset: auto; grid-area: 1 / 1; justify-content: flex-start; }
+        :global(html[data-layout='landscape']) .services-panel h3 { font-size: clamp(22px, 4vw, 40px); }
+        :global(html[data-layout='landscape']) .services-panel h3 > .mask { white-space: nowrap; }
+        :global(html[data-layout='landscape']) .services-panel h3 strong { padding: 0 8px 3px; }
+        :global(html[data-layout='landscape']) .services-panel p { margin-top: 10px; font-size: 13px; line-height: 1.5; height: 4.5em; overflow: hidden; }
+        :global(html[data-layout='landscape']) .services-timer { margin-top: 10px; }
+        :global(html[data-layout='landscape']) .services-station { display: flex; grid-column: 1 / -1; grid-row: 3; }
       `}</style>
     </PinnedSection>
   );
