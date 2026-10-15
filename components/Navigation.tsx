@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 const LINK_IDS = ['work', 'services', 'about', 'footer'] as const;
 
 export function Navigation() {
-  const { theme, toggleTheme } = useTheme();
   const { language, dictionary, toggleLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
 
@@ -23,7 +21,6 @@ export function Navigation() {
           <button className="brand" onClick={() => go('hero-section')} aria-label={dictionary.navigation.backTop}><span>KE</span>RN</button>
           <button className="menu" onClick={() => setOpen((value) => !value)} aria-label={dictionary.navigation.menu} aria-expanded={open}>M</button>
           <button className="language" onClick={toggleLanguage} aria-label={dictionary.navigation.language}>{language === 'en' ? 'PL' : 'EN'}</button>
-          <button className="theme" onClick={toggleTheme} aria-label={dictionary.navigation.theme}>{theme === 'dark' ? dictionary.navigation.light : dictionary.navigation.dark}</button>
         </div>
       </header>
       <div className={`nav-overlay ${open ? 'nav-overlay--open' : ''}`}>
@@ -37,8 +34,7 @@ export function Navigation() {
         .brand { grid-column: 1 / 3; font: 300 14px/1 var(--font-display); letter-spacing: .02em; }
         .brand span { color: var(--accent-cyan); }
         .menu { grid-column: 3 / 4; font-size: 16px; }
-        .language { grid-column: -3 / -2; font-size: 11px; }
-        .theme { grid-column: -2 / -1; font: 500 9px/1 var(--font-mono); letter-spacing: .04em; }
+        .language { grid-column: -2 / -1; font-size: 11px; }
         .nav-overlay { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: var(--bg-canvas); clip-path: inset(0 0 100% 0); transition: clip-path .7s cubic-bezier(.16,1,.3,1); pointer-events: none; }
         .nav-overlay--open { clip-path: inset(0); pointer-events: auto; }
         .nav-overlay nav { display: flex; flex-direction: column; }
@@ -50,7 +46,6 @@ export function Navigation() {
           :global(html[data-layout='flow']) .brand { width: 120px; }
           :global(html[data-layout='flow']) .menu { width: var(--header-height); }
           :global(html[data-layout='flow']) .language { margin-left: auto; width: var(--header-height); }
-          :global(html[data-layout='flow']) .theme { width: var(--header-height); }
         }
         :global(html[data-layout='portrait']) .site-nav { padding-top: env(safe-area-inset-top); height: calc(var(--header-height) + env(safe-area-inset-top)); }
         :global(html[data-layout='portrait']) .nav-overlay nav button { font-size: clamp(38px, 11vw, 72px); padding: 6px 0; }

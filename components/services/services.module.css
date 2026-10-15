@@ -1,0 +1,244 @@
+/*
+ * Services chapter. Every moving value is a CSS variable written once per frame
+ * by ServicesIndex on the page's frame clock:
+ *   --win --cond --wexit      intro words (in / condense / exit)
+ *   --band --axis --dev --conv  stage opening, axis, drawing arrival, outro
+ *   --d{i} --ad{i} --a{i}     per service: signed distance, distance, assembly
+ *   --px --py --wx --rx       pointer, world offset, ruler offset
+ * The drawings themselves are painted on one canvas (lib/serviceDrawings.ts).
+ */
+
+.root {
+  --bs: var(--grid-block-size);
+  --surf: color-mix(in srgb, var(--text-primary) 5%, var(--bg-canvas));
+  --surf2: color-mix(in srgb, var(--text-primary) 10%, var(--bg-canvas));
+  --ink: var(--text-primary);
+  --ink2: var(--text-secondary);
+  --ink3: var(--text-tertiary);
+  --line: var(--border-primary);
+  --ok: #34b27b;
+  position: relative;
+  height: 100%;
+}
+.s0 { --d: var(--d0, -1); --ad: var(--ad0, 1); --a: var(--a0, 0); }
+.s1 { --d: var(--d1, -2); --ad: var(--ad1, 2); --a: var(--a1, 0); }
+.s2 { --d: var(--d2, -2); --ad: var(--ad2, 2); --a: var(--a2, 0); }
+.s3 { --d: var(--d3, -2); --ad: var(--ad3, 2); --a: var(--a3, 0); }
+.s4 { --d: var(--d4, -2); --ad: var(--ad4, 2); --a: var(--a4, 0); }
+.s5 { --d: var(--d5, -2); --ad: var(--ad5, 2); --a: var(--a5, 0); }
+.live { /* toggled per scene when it is near the stage */ }
+
+/* ------------------------------------------------------------------ header (row 1) */
+.head {
+  position: absolute; left: 0; right: 0; top: var(--bs); height: var(--bs);
+  display: flex; align-items: center; gap: 28px; padding-right: 22px;
+}
+.label { font: 500 11px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; }
+.label b { color: var(--ink); font-weight: 500; }
+.condensed {
+  font: 500 11px/1 var(--font-mono); letter-spacing: .14em; color: var(--ink2); white-space: nowrap;
+  clip-path: inset(0 calc((1 - var(--cond, 0)) * 100%) 0 0);
+}
+.rail { position: relative; display: flex; margin-left: auto; border-bottom: 1px solid var(--line); }
+.rail button {
+  min-width: 44px; height: 44px; padding: 0 10px; font: 500 11px/1 var(--font-mono); letter-spacing: .08em;
+  color: var(--ink3); transition: color .35s ease;
+}
+.rail button:hover, .rail button.on { color: var(--ink); }
+.railFill {
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--ink);
+  transform-origin: left; transform: scaleX(var(--prog, 0));
+}
+
+/* ------------------------------------------------------------------ intro */
+.intro {
+  position: absolute; left: 0; top: calc(var(--bs) * 2); height: calc(var(--bs) * 9);
+  width: calc(var(--bs) * (var(--tc) + 3));
+  display: flex; flex-direction: column; justify-content: center; pointer-events: none;
+  font: 200 min(calc(var(--bs) * (var(--tc) + 3) / 7.8), calc(var(--bs) * 1.3))/1 var(--font-display);
+  letter-spacing: -.055em; color: var(--ink);
+}
+.word {
+  display: block; overflow: hidden; padding-bottom: .04em;
+  transform-origin: left center;
+  transform: translate3d(calc(var(--cond, 0) * 4%), calc(var(--cond, 0) * (1 - var(--i)) * 100%), 0) scale(calc(1 - var(--cond, 0) * .3));
+}
+.word:nth-child(2) { color: var(--ink2); }
+.word:nth-child(3) { color: var(--ink3); }
+.word > span { display: block; transform: translate3d(0, calc((1 - var(--win, 0)) * 110% - var(--wexit, 0) * 115%), 0); }
+.lead {
+  position: absolute; left: 0; top: calc(var(--bs) * 9.4);
+  max-width: calc(var(--bs) * (var(--tc) + 2));
+  font: 300 clamp(15px, 1.2vw, 19px)/1.4 var(--font-display); color: var(--ink2);
+  opacity: calc(var(--win, 0) * (1 - var(--wexit, 0)));
+}
+.hint {
+  position: absolute; right: 0; top: calc(var(--bs) * 9.6);
+  display: flex; align-items: center; gap: 14px;
+  font: 500 10px/1 var(--font-mono); letter-spacing: .16em; color: var(--ink3);
+  opacity: calc(var(--win, 0) * var(--hint, 1));
+}
+.hint i { position: relative; width: 64px; height: 1px; background: var(--line); overflow: hidden; }
+.hint i::after { content: ''; position: absolute; inset: 0; background: var(--ink); animation: hint 2.2s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes hint { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* ------------------------------------------------------------------ the world */
+.world {
+  position: absolute; left: calc(-1 * var(--grid-x-offset)); width: 100vw;
+  top: calc(var(--bs) * 2); height: calc(var(--bs) * 9);
+  overflow: hidden; pointer-events: none; opacity: var(--band, 0);
+  /* static mask: the moving grid lives behind the typography and fades out
+     before the device, so it never has to follow the orb (no per-frame repaint) */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 calc(var(--grid-x-offset) + var(--bs) * (var(--tc) + .4)), transparent calc(var(--grid-x-offset) + var(--bs) * (var(--tc) + 2.6)));
+  mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 calc(var(--grid-x-offset) + var(--bs) * (var(--tc) + .4)), transparent calc(var(--grid-x-offset) + var(--bs) * (var(--tc) + 2.6)));
+}
+.worldInner {
+  position: absolute; top: 0; bottom: 0; left: calc(var(--bs) * -2); width: calc(100vw + var(--bs) * 4);
+  background-image:
+    linear-gradient(90deg, var(--grid-line-large) 1px, transparent 1px),
+    linear-gradient(0deg, var(--grid-line-large) 1px, transparent 1px);
+  background-size: var(--bs) var(--bs);
+  background-position: calc(var(--grid-x-offset) + var(--bs) * 2) 0;
+  will-change: transform;
+}
+.axis {
+  position: absolute; left: calc(-1 * var(--grid-x-offset)); width: 100vw;
+  top: calc(var(--bs) * 10.5); height: 10px; pointer-events: none;
+  transform: scaleX(var(--axis, 0));
+  background-image: repeating-linear-gradient(90deg, var(--route-line) 0 1px, transparent 1px calc(var(--bs) / 2));
+  background-size: 100% 6px; background-repeat: no-repeat;
+  background-position: calc(var(--rx, 0px) + var(--grid-x-offset)) 0;
+}
+.axis i { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--route-line); }
+
+/* ------------------------------------------------------------------ the track (typography travels) */
+.track {
+  position: absolute; left: 0; top: calc(var(--bs) * 2); height: calc(var(--bs) * 9); width: 100%;
+  transform: translate3d(100vw, 0, 0); will-change: transform; pointer-events: none;
+}
+.copies {
+  position: absolute; left: 0; top: calc(var(--bs) * 2); height: calc(var(--bs) * 8.3);
+  width: calc(var(--bs) * (var(--tc) + .8)); overflow: hidden;
+  opacity: calc(1 - var(--conv, 0) * 1.4);
+}
+.copy {
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: calc(var(--bs) * var(--tc)); pointer-events: auto;
+  transform: translate3d(calc(var(--d) * -1 * var(--bs) * (var(--tc) + 1.4)), 0, 0) skewX(var(--skew, 0deg));
+  transform-origin: 0 100%;
+  visibility: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: clamp(14px, 2.4vh, 26px);
+  --sg: clamp(-1, calc(var(--d) * -1000), 1);
+}
+.index { display: flex; align-items: baseline; gap: 10px; font: 500 11px/1 var(--font-mono); letter-spacing: .12em; color: var(--ink3); }
+.index b { font: 200 clamp(34px, 3.4vw, 60px)/1 var(--font-display); letter-spacing: -.05em; color: var(--ink); }
+.title {
+  display: flex; flex-direction: column;
+  font: 200 min(calc(var(--bs) * var(--tc) / (var(--chars) * .66)), calc(var(--bs) * 1.35))/.94 var(--font-display);
+  letter-spacing: -.055em; color: var(--ink);
+}
+.copy.live { visibility: visible; will-change: transform; }
+.mask { display: block; overflow: hidden; padding-bottom: .05em; white-space: nowrap; }
+.mask > span {
+  display: block;
+  --t: clamp(0, calc(var(--a) * 1.5 - var(--n, 0) * .18), 1);
+  transform: translate3d(0, calc((1 - var(--t)) * 108% * var(--sg, 1)), 0);
+}
+.line {
+  max-width: 34ch; font: 300 clamp(15px, 1.15vw, 19px)/1.45 var(--font-display); color: var(--ink2);
+  opacity: clamp(0, calc(var(--a) * 1.6 - .5), 1);
+  transform: translate3d(calc((1 - var(--a)) * 24px * var(--sg, 1)), 0, 0);
+}
+.caps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 8px; max-width: calc(var(--bs) * var(--tc) - 20px); }
+.caps li {
+  font: 500 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink2);
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 999px;
+  --t: clamp(0, calc(var(--a) * 1.8 - .5 - var(--n, 0) * .14), 1);
+  opacity: var(--t); transform: translate3d(0, calc((1 - var(--t)) * 10px), 0);
+}
+.caps li::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--acc); vertical-align: 1px; }
+.marks span {
+  position: absolute; top: calc(var(--bs) * 8.62); left: calc(var(--i) * var(--sw, 100vw));
+  display: flex; gap: 10px; font: 500 10px/1 var(--font-mono); letter-spacing: .12em; color: var(--ink3); white-space: nowrap;
+  opacity: var(--axis, 0);
+}
+.marks b { color: var(--ink); font-weight: 500; }
+
+/* ------------------------------------------------------------------ the stage: six drawings on one canvas */
+.area {
+  position: absolute; top: calc(var(--bs) * 2); height: calc(var(--bs) * 8.2);
+  left: calc(var(--bs) * (var(--tc) + 1)); right: 0;
+  pointer-events: none;
+}
+.drawing { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ------------------------------------------------------------------ bottom row */
+.counter {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  font: 500 11px/1 var(--font-mono); letter-spacing: .12em; color: var(--ink3); text-transform: uppercase;
+  opacity: calc(var(--dev, 0) * (1 - var(--conv, 0)));
+}
+.counter b { color: var(--ink); font-weight: 500; }
+.next {
+  position: absolute; left: 50%; top: calc(var(--bs) * 11); height: var(--bs); display: flex; align-items: center;
+  transform: translateX(-50%); font: 500 11px/1 var(--font-mono); letter-spacing: .14em; color: var(--ink2);
+  opacity: var(--conv, 0); pointer-events: none;
+}
+.station { display: none !important; }
+
+/* ------------------------------------------------------------------ reduced motion: same story, no travel */
+.root[data-reduced] .copy { transform: none; opacity: clamp(0, calc(1 - var(--ad) * 2), 1); }
+.root[data-reduced] .mask > span, .root[data-reduced] .line, .root[data-reduced] .caps li { transform: none; }
+.root[data-reduced] .marks { display: none; }
+.root[data-reduced] * { animation: none !important; }
+
+/* ------------------------------------------------------------------ portrait: stage on top, copy below */
+:global(html[data-layout='portrait']) .root { --copy-h: clamp(210px, 34svh, 300px); }
+:global(html[data-layout='portrait']) .head {
+  top: calc(var(--bs) + 6px); height: 44px; gap: 12px; padding-right: 0;
+}
+:global(html[data-layout='portrait']) .condensed { display: none; }
+:global(html[data-layout='portrait']) .rail button { min-width: 36px; padding: 0 4px; font-size: 10px; }
+:global(html[data-layout='portrait']) .world, :global(html[data-layout='portrait']) .axis,
+:global(html[data-layout='portrait']) .marks, :global(html[data-layout='portrait']) .counter,
+:global(html[data-layout='portrait']) .next, :global(html[data-layout='portrait']) .hint { display: none; }
+:global(html[data-layout='portrait']) .area { left: 0; right: 0; top: calc(var(--bs) + 58px); height: auto; bottom: calc(var(--copy-h) + 46px); }
+:global(html[data-layout='portrait']) .copies { top: auto; bottom: 40px; height: var(--copy-h); width: 100%; }
+:global(html[data-layout='portrait']) .copy { width: 100%; justify-content: flex-start; gap: 12px; transform: translate3d(calc(var(--d) * -1 * (100vw - var(--grid-x-offset))), 0, 0) skewX(var(--skew, 0deg)); }
+:global(html[data-layout='portrait']) .index b { font-size: 30px; }
+:global(html[data-layout='portrait']) .title { font-size: min(calc((100vw - 2 * var(--grid-x-offset)) / (var(--chars) * .68)), 54px); }
+:global(html[data-layout='portrait']) .line { font-size: 15px; max-width: 38ch; }
+:global(html[data-layout='portrait']) .caps { max-width: none; }
+:global(html[data-layout='portrait']) .caps li { padding: 7px 9px; font-size: 9.5px; white-space: nowrap; }
+:global(html[data-layout='portrait']) .intro {
+  top: auto; bottom: 40px; height: var(--copy-h); width: 100%; justify-content: center;
+  font-size: min(calc((100vw - 2 * var(--grid-x-offset)) / 7.6), 64px);
+}
+:global(html[data-layout='portrait']) .lead { top: auto; bottom: 40px; max-width: none; font-size: 14px; }
+:global(html[data-layout='portrait']) .station { display: flex !important; position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom)); }
+@media (max-height: 640px) {
+  :global(html[data-layout='portrait']) .root { --copy-h: 196px; }
+  :global(html[data-layout='portrait']) .caps li:nth-child(n+4) { display: none; }
+}
+
+/* ------------------------------------------------------------------ landscape phones: stacked scenes */
+.stacked {
+  --d0: 0; --d1: 0; --d2: 0; --d3: 0; --d4: 0; --d5: 0;
+  --ad0: 0; --ad1: 0; --ad2: 0; --ad3: 0; --ad4: 0; --ad5: 0;
+  --a0: 1; --a1: 1; --a2: 1; --a3: 1; --a4: 1; --a5: 1;
+  --ink: var(--text-primary); --ink2: var(--text-secondary); --ink3: var(--text-tertiary); --line: var(--border-primary);
+  --surf: color-mix(in srgb, var(--text-primary) 5%, var(--bg-canvas));
+  --surf2: color-mix(in srgb, var(--text-primary) 10%, var(--bg-canvas));
+  --ok: #34b27b;
+  padding: calc(var(--grid-block-size) + 16px) 0 calc(20px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 36px;
+}
+.stackHead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 24px; align-items: end; }
+.stackIntro { grid-column: 1; font: 200 clamp(22px, 4vw, 38px)/1.05 var(--font-display); letter-spacing: -.04em; color: var(--ink); }
+.stackLead { grid-column: 1; font: 300 14px/1.4 var(--font-display); color: var(--ink2); }
+.stackOrb { grid-column: 2; grid-row: 1 / 4; aspect-ratio: 1; max-height: 54svh; justify-self: center; width: 100%; }
+.stackScene { --d: 0; --ad: 0; --a: 1; --sg: 1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: center; }
+.stackCopy { display: flex; flex-direction: column; gap: 12px; }
+.stackCopy .title { font-size: min(calc(40vw / (var(--chars) * .68)), 44px); }
+.stackCopy .line { font-size: 14px; }
+.still { display: block; width: 100%; max-width: 100%; aspect-ratio: 825 / 615; max-height: 72svh; justify-self: center; }

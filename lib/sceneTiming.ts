@@ -19,10 +19,37 @@ import type { SectionId } from './grid';
 export const SECTION_SCROLL_VH: Record<SectionId, number> = {
   hero: 200,
   work: 600,
-  services: 600,
+  services: 1000,
   about: 400,
   footer: 100,
 };
+
+/**
+ * Total scroll distance of the pinned desktop page in vh: sections stack with
+ * a one-viewport overlap each, and the last viewport is the screen itself.
+ * Orb keyframes are authored in vh of scroll and converted with `V()`, so a
+ * section can change length without every later keyframe drifting.
+ */
+export const TOTAL_SCROLL_VH = (() => {
+  const ids: SectionId[] = ['hero', 'work', 'services', 'about', 'footer'];
+  return ids.reduce((sum, id, i) => sum + SECTION_SCROLL_VH[id] - (i === 0 ? 0 : 100), 0) - 100;
+})();
+
+/** vh of scroll → globalProgress */
+export const V = (vh: number) => vh / TOTAL_SCROLL_VH;
+
+/** Scroll position (vh) where each section's frame settles at the top (desktop). */
+export const SECTION_START_VH: Record<SectionId, number> = (() => {
+  const ids: SectionId[] = ['hero', 'work', 'services', 'about', 'footer'];
+  const out = {} as Record<SectionId, number>;
+  let top = 0;
+  ids.forEach((id, i) => {
+    if (i > 0) top -= 100;
+    out[id] = top;
+    top += SECTION_SCROLL_VH[id];
+  });
+  return out;
+})();
 
 const NEXT: Record<SectionId, SectionId | null> = {
   hero: 'work',

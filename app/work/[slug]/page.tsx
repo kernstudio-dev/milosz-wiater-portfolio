@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PROJECTS } from '@/data/projects';
+import { TRANSLATIONS } from '@/data/translations';
 import { ProjectStory } from './ProjectStory';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!project) return { title: 'Project not found — KERN' };
   return {
     title: `${project.title} — KERN`,
-    description: project.description,
+    description: TRANSLATIONS.en.projects[project.id]?.summary,
   };
 }
 

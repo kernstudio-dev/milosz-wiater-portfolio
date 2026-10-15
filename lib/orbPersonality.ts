@@ -1,3 +1,5 @@
+import { V } from './sceneTiming';
+
 /**
  * Orb personalities — parameter states of the ONE orb.
  * Sections never swap the object; they only interpolate these values.
@@ -43,26 +45,26 @@ export const CONTACT: OrbPersonality = {
   flow: 0, ribbon: 0, volume: 0, shells: .9, speed: .55, pointScale: .94,
 };
 
-/** Services: the most expressive states. One per capability, same order as the content. */
+/** Services: the most expressive states. One per service, same order as the chapter. */
 export const SERVICE_PERSONALITIES: (OrbPersonality & { color: string })[] = [
-  // 01 web development — crisp, structured membrane with fine creases
+  // 01 websites — crisp, structured membrane with fine creases
   { fold: .2, foldFreq: 1.1, warp: .5, ridge: .08, ridgeFreq: 2.6, detail: .008, detailFreq: 8,
-    flow: .04, ribbon: 0, volume: 0, shells: 0, speed: 1.05, pointScale: .98, color: '#62c9bb' },
-  // 02 web applications — layered fibres, systemic flow
-  { fold: .16, foldFreq: 1.2, warp: .65, ridge: .04, ridgeFreq: 2.2, detail: .006, detailFreq: 7,
-    flow: .62, ribbon: 0, volume: 0, shells: 0, speed: 1.1, pointScale: 1, color: '#63a7ff' },
-  // 03 product design — elegant petals / meridians
+    flow: .04, ribbon: 0, volume: 0, shells: 0, speed: 1.05, pointScale: .98, color: '#6cc4b4' },
+  // 02 e-commerce — an object: elegant petals / meridians
   { fold: .16, foldFreq: .95, warp: .45, ridge: .06, ridgeFreq: 2.2, detail: .006, detailFreq: 7,
-    flow: .12, ribbon: .72, volume: 0, shells: 0, speed: .9, pointScale: 1.02, color: '#b15ee8' },
-  // 04 motion & interaction — largest, fastest folding
+    flow: .12, ribbon: .72, volume: 0, shells: 0, speed: .9, pointScale: 1.02, color: '#df9fb4' },
+  // 03 web applications — layered fibres, systemic flow
+  { fold: .16, foldFreq: 1.2, warp: .65, ridge: .04, ridgeFreq: 2.2, detail: .006, detailFreq: 7,
+    flow: .62, ribbon: 0, volume: 0, shells: 0, speed: 1.1, pointScale: 1, color: '#7ea4ff' },
+  // 04 mobile — compact, fastest folding, held in the hand
   { fold: .34, foldFreq: 1.15, warp: 1, ridge: .07, ridgeFreq: 2.3, detail: .01, detailFreq: 8,
-    flow: .22, ribbon: 0, volume: 0, shells: 0, speed: 1.55, pointScale: 1.04, color: '#ff7657' },
-  // 05 AI systems — neural dust core inside a crinkled skin
+    flow: .22, ribbon: 0, volume: 0, shells: 0, speed: 1.55, pointScale: 1.04, color: '#ef8458' },
+  // 05 growth — signal dust gathering inside a crinkled skin
   { fold: .17, foldFreq: 1.3, warp: .8, ridge: .06, ridgeFreq: 3, detail: .03, detailFreq: 10,
-    flow: .15, ribbon: 0, volume: .38, shells: 0, speed: 1.2, pointScale: .98, color: '#e8a933' },
-  // 06 automation — ordered meridian cage with nested layers, mechanical precision
+    flow: .15, ribbon: 0, volume: .38, shells: 0, speed: 1.2, pointScale: .98, color: '#e0b04a' },
+  // 06 care & development — nested layers, ordered continuity
   { fold: .12, foldFreq: 1, warp: .35, ridge: .05, ridgeFreq: 2.4, detail: .005, detailFreq: 7,
-    flow: 0, ribbon: .5, volume: 0, shells: .38, speed: 1.1, pointScale: .96, color: '#f39b18' },
+    flow: 0, ribbon: .5, volume: 0, shells: .38, speed: 1.1, pointScale: .96, color: '#a99bf0' },
 ];
 
 export function lerpPersonality(a: OrbPersonality, b: OrbPersonality, t: number, target: OrbPersonality) {
@@ -84,14 +86,14 @@ type Stop = { at: number; preset: OrbPersonality | 'services' };
 /** Section path along globalProgress; 'services' resolves to the live service blend. */
 const PATH: Stop[] = [
   { at: 0, preset: HERO },
-  { at: .01, preset: HERO },
-  { at: .066, preset: WORK },
-  { at: .35, preset: WORK },
-  { at: .425, preset: 'services' },
-  { at: .715, preset: 'services' },
-  { at: .782, preset: ABOUT },
-  { at: .93, preset: ABOUT },
-  { at: .99, preset: CONTACT },
+  { at: V(14), preset: HERO },
+  { at: V(92.4), preset: WORK },
+  { at: V(490), preset: WORK },
+  { at: V(595), preset: 'services' },
+  { at: V(1401), preset: 'services' },
+  { at: V(1494.8), preset: ABOUT },
+  { at: V(1702), preset: ABOUT },
+  { at: V(1786), preset: CONTACT },
 ];
 
 export function samplePersonality(progress: number, services: OrbPersonality, target: OrbPersonality) {

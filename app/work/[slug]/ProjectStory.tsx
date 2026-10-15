@@ -5,7 +5,6 @@ import type { Project } from '@/data/projects';
 import { PROJECTS } from '@/data/projects';
 import { CASE_STUDIES, CASE_VISUALS } from '@/data/caseStudies';
 import { useLanguage } from '@/context/LanguageContext';
-import { useTheme } from '@/context/ThemeContext';
 import { usePageTransition } from '@/context/TransitionContext';
 import { useLenis } from '@/hooks/useLenis';
 import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
@@ -62,7 +61,7 @@ function useSceneVariables(root: React.RefObject<HTMLElement | null>, key: strin
         if (pe > .18 && !scene.dataset.in) scene.dataset.in = 'true';
       });
     };
-    const IMAGE_ASPECT = 1376 / 768;
+    const IMAGE_ASPECT = 16 / 10;
     const measureHeroFit = () => {
       // ratio between the full-bleed cover width and a framed window as wide as the content
       const pad = Math.min(64, Math.max(20, window.innerWidth * .034));
@@ -95,7 +94,6 @@ function useSceneVariables(root: React.RefObject<HTMLElement | null>, key: strin
 }
 
 export function ProjectStory({ project, next }: ProjectStoryProps) {
-  const { theme, toggleTheme } = useTheme();
   const { language, dictionary, toggleLanguage } = useLanguage();
   const { pageReady, openProject, wipeTo, prefetch } = usePageTransition();
   const pageRef = useRef<HTMLElement>(null);
@@ -154,10 +152,10 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
     openProject({ href: `/work/${next.id}`, src: next.media.src, rect, label: next.title });
   };
 
-  const crop = (i: number): Vars => {
-    const c = visuals.crops[i % visuals.crops.length];
-    return { '--cx': `${c.x}%`, '--cy': `${c.y}%`, '--zoom': c.zoom };
-  };
+  const focusVars = (c: { x: number; y: number; zoom: number }): Vars => ({ '--cx': `${c.x}%`, '--cy': `${c.y}%`, '--zoom': c.zoom });
+  const crop = (i: number): Vars => focusVars(visuals.crops[i % visuals.crops.length]);
+  const [detailImage, challengeImage, resultImage] = project.gallery;
+  const status = project.status === 'concept' ? dictionary.work.concept : project.status === 'progress' ? dictionary.work.progress : null;
 
   // System tour: the camera visits each build point on the full interface.
   // Focal points are clamped so the zoomed image always covers its frame.
@@ -185,7 +183,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       className={`${styles.page} ${ready ? styles.ready : ''}`}
       data-language={language}
       data-project={project.id}
-      style={{ '--accent': visuals.accent } as Vars}
+      style={{ '--accent': project.accent } as Vars}
     >
       <header className={styles.header}>
         <a href="/" className={styles.brand} onClick={(event) => back(event, '/', 'KERN')}><span>KE</span>RN</a>
@@ -193,7 +191,6 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
           <button type="button" className={styles.control} onClick={toggleLanguage} aria-label={dictionary.caseStudy.switchLanguage}>
             <span className={language === 'en' ? styles.activeOption : ''}>EN</span><i>/</i><span className={language === 'pl' ? styles.activeOption : ''}>PL</span>
           </button>
-          <button type="button" className={styles.control} onClick={toggleTheme} aria-label={dictionary.caseStudy.switchTheme}>{theme === 'dark' ? dictionary.navigation.light : dictionary.navigation.dark}</button>
           <a href="/#work" className={styles.back} onClick={(event) => back(event, '/#work', dictionary.caseStudy.back)}><i>←</i> {dictionary.caseStudy.back}</a>
         </nav>
       </header>
@@ -214,6 +211,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
               <span>{dictionary.caseStudy.project} / {project.number}</span>
               <span>{copy.category}</span>
               <span>{project.year}</span>
+              {status && <span className={styles.status}>{status}</span>}
             </div>
             <h1 className={styles.heroTitle} aria-label={project.title}>
               {titleLines.map((line, i) => (
@@ -238,9 +236,9 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         <p className={styles.statementText} style={{ '--n': statementWords.length } as Vars}>
           {statementWords.map((word, i) => <span key={`${word}-${i}`} style={{ '--i': i } as Vars}>{word} </span>)}
         </p>
-        <figure className={styles.detail} style={crop(2)}>
-          <div className={styles.detailMedia}><img src={project.media.src} alt="" /></div>
-          <figcaption><span>{dictionary.caseStudy.figure} 01</span>{story.build[1]?.title}</figcaption>
+        <figure className={styles.detail} style={focusVars(visuals.detail)}>
+          <div className={styles.detailMedia}><img src={detailImage} alt={copy.galleryAlt[0]} /></div>
+          <figcaption><span>{dictionary.caseStudy.figure} 01</span>{copy.galleryAlt[0]}</figcaption>
         </figure>
         <dl className={styles.facts}>
           <div style={{ '--d': '0s' } as Vars}><dt>{dictionary.caseStudy.role}</dt><dd>{copy.role}</dd></div>
@@ -253,7 +251,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       {/* 02 — CHALLENGE: sticky cinematic crop, statement reveals over it */}
       <section className={styles.challenge} data-scene>
         <div className={styles.challengeSticky}>
-          <div className={styles.challengeMedia} style={crop(0)}><img src={project.media.src} alt="" /></div>
+          <div className={styles.challengeMedia} style={focusVars(visuals.challenge)}><img src={challengeImage} alt={copy.galleryAlt[1]} /></div>
           <div className={styles.challengeCopy}>
             {mark('02', dictionary.caseStudy.challenge, true)}
             <h2>{story.challengeTitle}</h2>
@@ -272,7 +270,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
           <div className={styles.systemBody}>
             <figure className={styles.blueprint}>
               <div className={styles.bpFrame}>
-                <div className={styles.bpZoom}><img src={project.media.src} alt={copy.mediaAlt} /></div>
+                <div className={styles.bpZoom}><img src={project.blueprint} alt="" /></div>
                 {visuals.crops.slice(0, 4).map((c, i) => (
                   <span key={i} className={styles.bpMarker} style={{ '--mx': c.x, '--my': c.y, '--i': i } as Vars} aria-hidden="true">
                     <b>{String(i + 1).padStart(2, '0')}</b>
@@ -286,7 +284,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
             <ol className={styles.bpList}>
               {story.build.map((item, i) => (
                 <li key={item.title} style={{ '--i': i } as Vars}>
-                  <span className={styles.bpCrop} style={crop(i)} aria-hidden="true"><img src={project.media.src} alt="" /><b>{String(i + 1).padStart(2, '0')}</b></span>
+                  <span className={styles.bpCrop} style={crop(i)} aria-hidden="true"><img src={project.blueprint} alt="" /><b>{String(i + 1).padStart(2, '0')}</b></span>
                   <span className={styles.bpIndex}>{String(i + 1).padStart(2, '0')}</span>
                   <h3>{item.title}</h3>
                   <p>{item.text}</p>
@@ -321,17 +319,18 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         <div className={styles.resultSticky}>
           <div className={styles.resultStage}>
             <div className={styles.browser}>
-              <div className={styles.browserBar} aria-hidden="true">
-                <i /><i /><i />
-                <span>{project.title}</span>
-              </div>
-              <div className={styles.browserMedia}><img src={project.media.src} alt={`${project.title} — ${dictionary.caseStudy.finalExperience}`} /></div>
+              <div className={styles.browserMedia}><img src={resultImage} alt={copy.galleryAlt[2]} /></div>
             </div>
           </div>
           <div className={styles.resultCard}>
             {mark('05', dictionary.caseStudy.result)}
             <p>{story.closing}</p>
-            <span className={styles.resultMeta}>{copy.category} · {project.year}</span>
+            <span className={styles.resultMeta}>{copy.category} · {project.year}{status ? ` · ${status}` : ''}</span>
+            {project.link && (
+              <a className={styles.resultLink} href={project.link} target="_blank" rel="noopener noreferrer">
+                {dictionary.work.viewProject} <i aria-hidden="true">↗</i>
+              </a>
+            )}
           </div>
         </div>
       </section>

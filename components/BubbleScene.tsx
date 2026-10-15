@@ -2,13 +2,14 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { useTheme } from '@/context/ThemeContext';
 import { useBubble } from '@/context/BubbleContext';
 import { getLiveScroll } from '@/context/ScrollContext';
 import { frameTop, getPortraitSections, SECTION_ORDER, type PortraitSection } from '@/lib/portraitGeometry';
 import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
 import { bubbleVertexShader, bubbleFragmentShader } from '@/components/bubble/shaders';
 import { sampleOrbTravel } from '@/lib/orbMotion';
+import { V } from '@/lib/sceneTiming';
+import { servicesOrb } from '@/lib/servicesStage';
 import {
   HERO,
   SERVICE_PERSONALITIES,
@@ -134,11 +135,8 @@ function buildOrbGeometry(count: number) {
 export function BubbleScene() {
   const mountRef = useRef<HTMLDivElement>(null);
   const bubble = useBubble();
-  const { theme } = useTheme();
   const bubbleRef = useRef(bubble);
-  const themeRef = useRef(theme);
   bubbleRef.current = bubble;
-  themeRef.current = theme;
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -181,7 +179,6 @@ export function BubbleScene() {
       uBaseRadius: { value: BASE_RADIUS },
       uPointSize: { value: basePointSize() },
       uPresence: { value: 1 },
-      uLightTheme: { value: themeRef.current === 'light' ? 1 : 0 },
       uTransition: { value: 0 },
       uPointerWorld: { value: new THREE.Vector3(0, 0, 0) },
       uPointerStrength: { value: 0 },
@@ -200,7 +197,7 @@ export function BubbleScene() {
       transparent: true,
       depthWrite: false,
       depthTest: false,
-      blending: themeRef.current === 'dark' ? THREE.AdditiveBlending : THREE.NormalBlending,
+      blending: THREE.AdditiveBlending,
     });
 
     // Three motion systems, three owners:
@@ -289,6 +286,15 @@ export function BubbleScene() {
           scale = (target.size * PORTRAIT_RADIUS * worldPerPixel) / BASE_RADIUS;
         }
       }
+      // Services chapter: the chapter places the orb inside its moving stage
+      // (same orb, same shader — position and size only, blended by weight).
+      const ov = servicesOrb;
+      if (ov.weight > .0005) {
+        const ovScale = (ov.radius * worldPerPixel) / BASE_RADIUS;
+        x = lerp(x, ov.x, ov.weight);
+        y = lerp(y, ov.y, ov.weight);
+        scale = lerp(scale, ovScale, ov.weight);
+      }
       const worldX = (x - width / 2) * worldPerPixel;
       const worldY = -(y - height / 2) * worldPerPixel;
       travelGroup.position.set(worldX, worldY, 0);
@@ -304,7 +310,14 @@ export function BubbleScene() {
         serviceTarget += delta;
         previousServiceIndex = activeServiceIndex;
       }
-      serviceMorph = lerp(serviceMorph, serviceTarget, 1 - Math.exp(-dt * 1.9));
+      if (ov.weight > .0005) {
+        // inside the chapter the form follows the scroll position continuously
+        serviceTarget = ov.pos;
+        previousServiceIndex = activeServiceIndex;
+        serviceMorph = lerp(serviceMorph, serviceTarget, 1 - Math.exp(-dt * 9));
+      } else {
+        serviceMorph = lerp(serviceMorph, serviceTarget, 1 - Math.exp(-dt * 1.9));
+      }
       const n = SERVICE_PERSONALITIES.length;
       const wrapped = ((serviceMorph % n) + n) % n;
       const fromIndex = Math.floor(wrapped);
@@ -312,7 +325,7 @@ export function BubbleScene() {
       const local = smooth(wrapped - fromIndex);
       lerpPersonality(SERVICE_PERSONALITIES[fromIndex], SERVICE_PERSONALITIES[toIndex], local, serviceBlend);
       serviceColor.copy(servicePalette[fromIndex]).lerp(servicePalette[toIndex], local);
-      const serviceWeight = smooth((globalProgress - .372) / .05) * (1 - smooth((globalProgress - .716) / .06));
+      const serviceWeight = smooth((globalProgress - V(520.8)) / V(70)) * (1 - smooth((globalProgress - V(1402.4)) / V(84)));
       samplePersonality(globalProgress, serviceBlend, personality);
 
       // ---- AMBIENT (time only) --------------------------------------------
@@ -381,14 +394,7 @@ export function BubbleScene() {
       const depth = globalProgress < .08 || globalProgress > .94 ? 'foreground' : globalProgress < .43 ? 'background' : 'midground';
       if (mount.dataset.depth !== depth) mount.dataset.depth = depth;
 
-      const isDark = themeRef.current === 'dark';
-      const blend = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
-      if (material.blending !== blend) {
-        material.blending = blend;
-        material.needsUpdate = true;
-      }
-      uniforms.uLightTheme.value = isDark ? 0 : 1;
-      uniforms.uPointSize.value = basePointSize() * (isDark ? 1 : 1.08) * personality.pointScale;
+      uniforms.uPointSize.value = basePointSize() * personality.pointScale;
 
       renderer.render(scene, camera);
 

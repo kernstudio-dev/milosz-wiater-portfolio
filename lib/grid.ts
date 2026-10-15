@@ -143,7 +143,7 @@ export function rectCenter(rect: PlaceholderRect) {
 export const SECTION_HEIGHT_VH: Record<SectionId, number | 'auto'> = {
   hero: 200,
   work: 600,
-  services: 600,
+  services: 1000,
   about: 400,
   footer: 100,
 };

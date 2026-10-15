@@ -10,6 +10,9 @@ import { useScrollProgress } from '@/context/ScrollContext';
 import { SectionGrid } from '@/components/SectionGrid';
 import { RouteMap } from '@/components/RouteMap';
 import { useBubble } from '@/context/BubbleContext';
+import { chapterBeat, chapterState, type ChapterState } from '@/lib/servicesStage';
+
+const bandState = {} as ChapterState;
 
 interface PinnedSectionProps {
   id: SectionId;
@@ -121,6 +124,19 @@ export function PinnedSection({ id, children, className = '', pinned = true }: P
       width: aperture,
       height: aperture,
     };
+    // Services chapter: the orb window opens into a full-width stage (rows 2–10)
+    // and closes again before About, on the chapter's own timeline.
+    if (id === 'services') {
+      const band = chapterState(chapterBeat(scroll.progress.services, 'pinned'), bandState).band;
+      if (band > 0) {
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+        const bx0 = -gridMetrics.xOffset - block, bx1 = vw - gridMetrics.xOffset + block;
+        const by0 = gridMetrics.yOffset + 2 * block, by1 = gridMetrics.yOffset + 11 * block;
+        const x0 = lerp(hole.x, bx0, band), x1 = lerp(hole.x + hole.width, bx1, band);
+        const y0 = lerp(hole.y, by0, band), y1 = lerp(hole.y + hole.height, by1, band);
+        hole = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+      }
+    }
   }
 
   return (

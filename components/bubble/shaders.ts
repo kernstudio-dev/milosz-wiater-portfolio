@@ -80,7 +80,6 @@ uniform float uShells;
 uniform float uBaseRadius;
 uniform float uPointSize;
 uniform float uPresence;
-uniform float uLightTheme;
 uniform float uTransition;
 uniform vec3 uPointerWorld;
 uniform float uPointerStrength;
@@ -227,7 +226,6 @@ uniform float uColorMix;
 uniform float uRim;
 uniform float uShellTint;
 uniform vec3 uTintColor;
-uniform float uLightTheme;
 
 varying float vAlpha;
 varying float vShade;
@@ -240,20 +238,17 @@ void main() {
   if (dist > 0.5) discard;
   float disc = smoothstep(0.5, 0.22, dist);
 
-  // Dark theme: light points, brightness follows the key light.
-  vec3 darkBase = mix(vec3(0.46, 0.49, 0.55), vec3(0.97, 0.97, 0.99), clamp(vShade, 0.0, 1.0));
-  // Light theme: ink points, darker in shadow and along the silhouette.
-  vec3 lightBase = mix(vec3(0.02, 0.022, 0.028), vec3(0.28, 0.29, 0.31), clamp(vShade * (1.0 - vRim * 0.6), 0.0, 1.0));
-  vec3 color = mix(darkBase, lightBase, uLightTheme);
+  // light points, brightness follows the key light
+  vec3 color = mix(vec3(0.46, 0.49, 0.55), vec3(0.97, 0.97, 0.99), clamp(vShade, 0.0, 1.0));
 
-  vec3 tint = mix(uTintColor * (0.55 + 0.6 * vShade), uTintColor * 0.62, uLightTheme);
+  vec3 tint = uTintColor * (0.55 + 0.6 * vShade);
   color = mix(color, tint, uShellTint * (0.45 + 0.4 * vRim));
-  vec3 accent = mix(uColor * (0.5 + 0.7 * vShade), uColor * 0.58, uLightTheme);
+  vec3 accent = uColor * (0.5 + 0.7 * vShade);
   color = mix(color, accent, uColorMix * (0.55 + 0.35 * vRim));
-  vec3 rimColor = mix(vec3(0.3, 0.72, 0.65), vec3(0.03, 0.2, 0.18), uLightTheme);
+  vec3 rimColor = vec3(0.3, 0.72, 0.65);
   color = mix(color, rimColor, uRim * pow(vRim, 3.0) * 0.8);
 
-  float alpha = disc * vAlpha * mix(1.0, 1.35, uLightTheme);
+  float alpha = disc * vAlpha;
   gl_FragColor = vec4(color, alpha);
 }
 `;

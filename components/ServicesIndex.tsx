@@ -1,405 +1,418 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { PinnedSection } from '@/components/PinnedSection';
-import { useScene } from '@/hooks/useScene';
 import { useBubble } from '@/context/BubbleContext';
-import { SERVICES } from '@/data/services';
 import { useLanguage } from '@/context/LanguageContext';
+import { getLiveScroll } from '@/context/ScrollContext';
 import { addFrameCallback, FRAME_ORDER } from '@/lib/frameLoop';
+import { frameTop, getPortraitSections } from '@/lib/portraitGeometry';
+import {
+  chapterBeat, chapterState, holdCentre, progressForBeat, servicesOrb, smooth,
+  SERVICE_COUNT, type ChapterState,
+} from '@/lib/servicesStage';
+import {
+  ACCENTS, DRAW_H, DRAW_W, REST_T,
+  drawFrame, drawScene, refreshPalette, sceneAt, type DrawCopy,
+} from '@/lib/serviceDrawings';
+import type { Dictionary } from '@/data/translations';
+import styles from '@/components/services/services.module.css';
 
-const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 - 2 * p); };
-const mod = (value: number, n: number) => ((value % n) + n) % n;
+type Vars = CSSProperties & Record<`--${string}`, string | number>;
+type Copy = Dictionary['services'];
 
-const COUNT = SERVICES.length;
-/** Scroll range (section progress) that maps onto the six service slots. */
-const SLOT_START = 1 / 6;
-const SLOT_END = 0.8;
-/** Autoplay: first advance and every following advance happen CYCLE ms after the latest user input. */
-const CYCLE = 4600;
-const TRANSITION_MS = 1150;
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const pad = (n: number) => String(n).padStart(2, '0');
+/** each title line is set unbroken, so the longest line decides the size */
+const longestWord = (lines: string[]) => Math.max(...lines.map((line) => line.length));
+const accentVars = (i: number): Vars => ({ '--acc': ACCENTS[i] });
 
-/**
- * Services is ONE motion scene.
- *
- *   displayed = (scrollSlot + autoOffset) mod 6
- *
- * - scrolling changes scrollSlot → the content always moves in the scroll direction
- * - autoplay (idle only) increments autoOffset → the document never scrolls
- * - any scroll input restarts the idle clock, so autoplay yields immediately
- * - leaving the scene resets autoOffset → re-entry is deterministic (01 from above, 06 from below)
- */
-export function ServicesIndex() {
-  const { scroll, progress, enter, leave } = useScene('services');
-  const { setActiveServiceIndex, gridMetrics } = useBubble();
-  const { dictionary } = useLanguage();
-  const layoutRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<HTMLElement>(null);
-  const [inViewport, setInViewport] = useState(false);
-  const [autoOffset, setAutoOffset] = useState(0);
-  const [hoverPaused, setHoverPaused] = useState(false);
-  const [previous, setPrevious] = useState<{ index: number; direction: 1 | -1; id: number } | null>(null);
-  const lastInput = useRef(0);
-  const lastChange = useRef(0);
-  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const displayedRef = useRef(0);
-  const changeId = useRef(0);
-
-  const slotProgress = clamp01((progress - SLOT_START) / (SLOT_END - SLOT_START));
-  // landscape phones: the scene is plain flow, so scroll does not pick the slot
-  const scrollSlot = gridMetrics?.layout === 'landscape' ? 0 : Math.min(COUNT - 1, Math.floor(slotProgress * COUNT));
-  const sceneActive = inViewport && enter > .95 && leave < .04;
-  const displayed = mod(scrollSlot + autoOffset, COUNT);
-  const service = dictionary.services.items[displayed];
-  const previousService = previous ? dictionary.services.items[previous.index] : null;
-  const direction = previous?.direction ?? 1;
-
-  const headingReveal = smooth((enter - .42) / .3);
-  const panelReveal = smooth((enter - .48) / .32);
-  const listReveal = smooth((enter - .56) / .34);
-  const exit = smooth(leave / .42);
-
-  // One place reacts to the displayed index: transition layers + orb personality.
+/** Reads the drawing palette (ink, ground, type) now and again once the fonts are ready. */
+function usePaletteWatch(onChange: () => void) {
+  const cb = useRef(onChange);
+  cb.current = onChange;
   useEffect(() => {
-    const from = displayedRef.current;
-    if (from === displayed) return;
-    let delta = displayed - from;
-    if (delta > COUNT / 2) delta -= COUNT;
-    if (delta < -COUNT / 2) delta += COUNT;
-    displayedRef.current = displayed;
-    lastChange.current = performance.now();
-    changeId.current += 1;
-    setPrevious({ index: from, direction: delta >= 0 ? 1 : -1, id: changeId.current });
-    if (transitionTimer.current) clearTimeout(transitionTimer.current);
-    transitionTimer.current = setTimeout(() => setPrevious(null), TRANSITION_MS);
-  }, [displayed]);
-
-  useEffect(() => setActiveServiceIndex(displayed), [displayed, setActiveServiceIndex]);
-
-  useEffect(() => {
-    const element = layoutRef.current;
-    if (!element) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setInViewport(entry.isIntersecting && entry.intersectionRatio > .25),
-      { threshold: [0, .25, .6] },
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
+    const run = () => { refreshPalette(); cb.current(); };
+    run();
+    let alive = true;
+    document.fonts?.ready.then(() => { if (alive) run(); });
+    return () => { alive = false; };
   }, []);
+}
 
-  // Once the scene is fully off screen, hand control fully back to scroll so
-  // re-entry is deterministic. Never reset while any part is still visible.
-  const offscreen = !inViewport || enter <= .05 || leave >= .99;
-  useEffect(() => {
-    if (offscreen) setAutoOffset(0);
-  }, [offscreen]);
+/* ------------------------------------------------------------------ copy */
+const SceneCopy = memo(function SceneCopy({ items }: { items: Copy['items'] }) {
+  return (
+    <>
+      {items.map((item, i) => (
+        <article
+          key={i}
+          className={`${styles.copy} ${styles[`s${i}`]}`}
+          data-scene={i}
+          style={{ '--i': i, '--chars': longestWord(item.title), ...accentVars(i) } as Vars}
+        >
+          <p className={styles.index}><b>{pad(i + 1)}</b><span>/ {pad(SERVICE_COUNT)}</span></p>
+          <h3 className={styles.title}>
+            {item.title.map((line, n) => (
+              <span key={line} className={styles.mask}><span style={{ '--n': n } as Vars}>{line}</span></span>
+            ))}
+          </h3>
+          <p className={styles.line}>{item.line}</p>
+          <ul className={styles.caps}>
+            {item.caps.map((cap, n) => <li key={cap} style={{ '--n': n } as Vars}>{cap}</li>)}
+          </ul>
+        </article>
+      ))}
+    </>
+  );
+});
 
-  // Any scroll movement is user input: restart the idle clock.
+/** One drawing at rest (landscape phones: stacked scenes, no pinned stage). */
+function ServiceStill({ index, draw }: { index: number; draw: DrawCopy }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const paint = () => {
+    const cv = ref.current;
+    if (!cv || !cv.clientWidth) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(cv.clientWidth * dpr);
+    cv.height = Math.round(cv.clientWidth * (DRAW_H / DRAW_W) * dpr);
+    const g = cv.getContext('2d');
+    if (!g) return;
+    const k = cv.width / DRAW_W;
+    g.setTransform(k, 0, 0, k, 0, 0);
+    g.clearRect(0, 0, DRAW_W, DRAW_H);
+    drawFrame(g, draw, [[index, 1]]);
+    drawScene(g, index, draw, { a: 1, t: REST_T[index], mx: 0, my: 0 });
+  };
+  const paintRef = useRef(paint);
+  paintRef.current = paint;
+  usePaletteWatch(() => paintRef.current());
   useEffect(() => {
-    lastInput.current = performance.now();
-  }, [scroll.scrollY]);
+    const cv = ref.current;
+    if (!cv) return;
+    const ro = new ResizeObserver(() => paintRef.current());
+    ro.observe(cv);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => { paintRef.current(); }, [draw]);
+  return <canvas ref={ref} className={styles.still} aria-hidden="true" />;
+}
 
-  // Autoplay clock + timer bar on the page's frame clock, only while the scene
-  // is active. It runs after the scroll state of the frame, and treats any
-  // scroll movement in this frame as input first, so autoplay can never
-  // advance in the same frame as a scroll-driven change.
+/* ------------------------------------------------------------------ chapter */
+export function ServicesIndex() {
+  const { dictionary } = useLanguage();
+  const { gridMetrics, setActiveServiceIndex } = useBubble();
+  const copy = dictionary.services;
+  const layout = gridMetrics?.layout;
+  const live = layout === 'pinned' || layout === 'portrait';
+  const rootRef = useRef<HTMLDivElement>(null);
+  const drawRef = useRef(copy.draw);
+  drawRef.current = copy.draw;
+  const [active, setActive] = useState(0);
+  const tc = gridMetrics ? Math.round(gridMetrics.sectionCols * .36) : 7;
+  usePaletteWatch(() => {});
+
   useEffect(() => {
-    if (!sceneActive) return;
+    const root = rootRef.current;
+    if (!root || !live) {
+      servicesOrb.weight = 0;
+      return;
+    }
+    const container = root.closest('.pinning-container') as HTMLElement | null;
+    const area = root.querySelector<HTMLElement>('[data-area]');
+    const canvas = root.querySelector<HTMLCanvasElement>('[data-canvas]');
+    const g = canvas?.getContext('2d') ?? null;
+    const world = root.querySelector<HTMLElement>('[data-world]');
+    const track = root.querySelector<HTMLElement>('[data-track]');
+    const rail = root.querySelector<HTMLElement>('[data-rail]');
+    const copies = root.querySelector<HTMLElement>('[data-copies]');
+    const axis = root.querySelector<HTMLElement>('[data-axis]');
+    const hint = root.querySelector<HTMLElement>('[data-hint]');
+    const copyEls = Array.from({ length: SERVICE_COUNT }, (_, i) => root.querySelector<HTMLElement>(`article[data-scene="${i}"]`));
+    if (!container || !area || !track || !canvas || !g) return;
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let seenScrollY = window.scrollY;
-    const tick = () => {
-      const now = performance.now();
-      if (Math.abs(window.scrollY - seenScrollY) > .5) {
-        seenScrollY = window.scrollY;
-        lastInput.current = now;
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    root.toggleAttribute('data-reduced', reduced);
+
+    // geometry, measured on resize only (relative to the pinned frame)
+    let A = { x: 0, y: 0, w: 1, h: 1 };
+    let sw = window.innerWidth;
+    let gridBs = 90;
+    let dpr = 1;
+    const measure = () => {
+      const c = container.getBoundingClientRect();
+      const a = area.getBoundingClientRect();
+      A = { x: a.left - c.left, y: a.top - c.top, w: Math.max(1, a.width), h: Math.max(1, a.height) };
+      gridBs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--grid-block-size')) || 90;
+      sw = window.innerWidth;
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(A.w * dpr);
+      canvas.height = Math.round(A.h * dpr);
+      root.style.setProperty('--sw', `${sw}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    ro.observe(area);
+    window.addEventListener('resize', measure);
+
+    const pointer = { x: 0, y: 0 };
+    const onPointer = (e: PointerEvent) => {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    if (finePointer && !reduced) window.addEventListener('pointermove', onPointer, { passive: true });
+
+    const st = {} as ChapterState;
+    // Custom properties inherit, so writing one re-evaluates the styles of the
+    // whole subtree below that element. Each value is written on the smallest
+    // element that uses it, and only when it changes.
+    const cache = new WeakMap<HTMLElement, Map<string, string>>();
+    const set = (el: HTMLElement | null, key: string, value: string) => {
+      if (!el) return;
+      let m = cache.get(el);
+      if (!m) { m = new Map(); cache.set(el, m); }
+      if (m.get(key) === value) return;
+      m.set(key, value);
+      if (key.startsWith('--')) el.style.setProperty(key, value);
+      else (el.style as unknown as Record<string, string>)[key] = value;
+    };
+    let lastPos = Number.NaN;
+    let vel = 0;
+    let px = 0;
+    let py = 0;
+    let clock = 0;
+    let lastActive = -1;
+    const liveFlags = new Array(SERVICE_COUNT).fill(false);
+    const frameList: [number, number][] = [];
+
+    const tick = (_t: number, deltaMs: number) => {
+      const dt = Math.min(.1, Math.max(.001, deltaMs / 1000));
+      const mode = document.documentElement.dataset.layout;
+      const scroll = getLiveScroll();
+      const p = scroll.progress.services;
+      const pinned = mode === 'pinned';
+      // not on screen: the orb belongs to the site path again
+      if (p <= 0 || (pinned && p >= 1)) {
+        servicesOrb.weight = 0;
+        return;
       }
-      const since = now - Math.max(lastInput.current, lastChange.current);
-      const fraction = hoverPaused ? 0 : clamp01(since / CYCLE);
-      if (timerRef.current) timerRef.current.style.transform = `scaleX(${fraction.toFixed(4)})`;
-      if (!hoverPaused && !reduced && since >= CYCLE) {
-        lastChange.current = now;
-        setAutoOffset((value) => value + 1);
+      const u = chapterBeat(p, pinned ? 'pinned' : 'portrait');
+      chapterState(u, st);
+      const pos = st.pos;
+      const cpos = clamp(pos, 0, SERVICE_COUNT - 1);
+      if (!reduced) clock += dt;
+
+      // velocity → skew (damped, so it breathes out after a stop)
+      const v = Number.isNaN(lastPos) ? 0 : (pos - lastPos) / dt;
+      lastPos = pos;
+      vel = lerp(vel, clamp(v, -4, 4), 1 - Math.exp(-dt * 7));
+      px = lerp(px, pointer.x, 1 - Math.exp(-dt * 3));
+      py = lerp(py, pointer.y, 1 - Math.exp(-dt * 3));
+      const skew = reduced ? 0 : clamp(-vel * 2.4, -7, 7);
+
+      // --- entry, intro, outro -------------------------------------------------
+      const enter = clamp(p / .1, 0, 1);
+      set(root, '--win', smooth((enter - .4) / .45).toFixed(4));
+      set(root, '--cond', st.condense.toFixed(4));
+      set(root, '--wexit', smooth((u - 1) / .55).toFixed(4));
+      set(root, '--band', st.band.toFixed(4));
+      set(axis, '--axis', st.axis.toFixed(4));
+      set(track, '--axis', st.axis.toFixed(4));
+      set(root, '--dev', st.device.toFixed(4));
+      set(root, '--conv', st.converge.toFixed(4));
+      set(rail, '--prog', clamp(pos / (SERVICE_COUNT - 1), 0, 1).toFixed(4));
+      set(hint, '--hint', (1 - smooth((u - 1.2) / .6)).toFixed(3));
+
+      // --- the world travels -----------------------------------------------------
+      set(track, 'transform', reduced ? 'none' : `translate3d(${(-pos * sw).toFixed(2)}px,0,0)`);
+      set(copies, '--skew', `${skew.toFixed(2)}deg`);
+      if (world) {
+        // wrap within one cell: the pattern is periodic, so the layer never runs out
+        const bs = gridBs;
+        const wx = (((-pos * sw * .38 + px * 6) % bs) + bs) % bs - bs;
+        set(world, 'transform', `translate3d(${wx.toFixed(1)}px,0,0)`);
+      }
+      set(axis, '--rx', `${(-pos * sw).toFixed(1)}px`);
+
+      // typography per scene: signed distance, distance, assembly
+      for (let i = 0; i < SERVICE_COUNT; i += 1) {
+        // beyond 1.3 every scene element is fully off stage, so the value stops changing
+        const d = clamp(pos - i, -1.3, 1.3);
+        const ad = Math.abs(d);
+        set(copyEls[i], '--d', d.toFixed(4));
+        set(copyEls[i], '--ad', ad.toFixed(4));
+        set(copyEls[i], '--a', smooth(1 - ad * 1.15).toFixed(4));
+        const isLive = ad < 1.3;
+        if (isLive !== liveFlags[i]) {
+          liveFlags[i] = isLive;
+          copyEls[i]?.classList.toggle(styles.live, isLive);
+        }
+      }
+
+      // --- the drawings: one frame, six scenes ------------------------------------
+      // drawing space is scaled uniformly into the stage and centred in it
+      const k = Math.min(A.w / DRAW_W, A.h / DRAW_H);
+      const ox = (A.w - DRAW_W * k) / 2;
+      const oy = (A.h - DRAW_H * k) / 2;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, A.w, A.h);
+      g.setTransform(k * dpr, 0, 0, k * dpr, ox * dpr, oy * dpr);
+      // the last drawing returns to its lines before the orb grows back
+      const fade = 1 - smooth((u - 12.7) / .5);
+      const copyDraw = drawRef.current;
+      frameList.length = 0;
+      const scenes: [number, number, number][] = [];
+      for (let i = 0; i < SERVICE_COUNT; i += 1) {
+        const s = sceneAt(pos, i);
+        const a = s.a * fade * st.device;
+        if (a <= .001) continue;
+        frameList.push([i, a]);
+        scenes.push([i, a, reduced ? 0 : s.dx]);
+      }
+      const frameW = st.device * fade;
+      if (frameW > .01) {
+        g.globalAlpha = frameW;
+        drawFrame(g, copyDraw, frameList.length ? frameList : []);
+        g.globalAlpha = 1;
+      }
+      const mx = reduced ? 0 : px;
+      const my = reduced ? 0 : py;
+      for (const [i, a, dx] of scenes) {
+        drawScene(g, i, copyDraw, { a, t: reduced ? REST_T[i] : clock, mx, my }, dx);
+      }
+
+      // --- the orb: entrance and exit only -------------------------------------------
+      // it withdraws into the stage while the first drawing builds, and grows back
+      // out of it for the hand-over to the site path at the end of the chapter
+      const top = pinned ? 0 : (() => {
+        const s = getPortraitSections().services;
+        return s ? frameTop(s, scroll.scrollY) : container.getBoundingClientRect().top;
+      })();
+      servicesOrb.x = A.x + A.w / 2;
+      servicesOrb.y = top + A.y + A.h / 2;
+      servicesOrb.radius = Math.max(.5, Math.min(A.w, A.h) * .26 * (1 - st.vanish));
+      servicesOrb.pos = cpos;
+      servicesOrb.weight = st.orb;
+
+      const now = Math.round(cpos);
+      if (now !== lastActive) {
+        lastActive = now;
+        setActive(now);
+        setActiveServiceIndex(now);
       }
     };
-    return addFrameCallback(tick, FRAME_ORDER.TIMERS);
-  }, [sceneActive, hoverPaused]);
+    const stop = addFrameCallback(tick, FRAME_ORDER.SCENE);
+    return () => {
+      stop();
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('pointermove', onPointer);
+      servicesOrb.weight = 0;
+    };
+  }, [live, layout, setActiveServiceIndex]);
 
-  useEffect(() => () => { if (transitionTimer.current) clearTimeout(transitionTimer.current); }, []);
+  const goTo = (i: number) => {
+    const root = rootRef.current;
+    const section = root?.closest('section');
+    if (!section) return;
+    const p = progressForBeat(holdCentre(i), layout === 'pinned' ? 'pinned' : 'portrait');
+    const y = section.offsetTop + p * section.offsetHeight - window.innerHeight;
+    if (window.kernLenis) window.kernLenis.scrollTo(y, { duration: 1.4 });
+    else window.scrollTo({ top: y, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  };
 
-  const goTo = useCallback((target: number) => {
-    lastInput.current = performance.now();
-    setAutoOffset((offset) => {
-      const current = mod(scrollSlot + offset, COUNT);
-      let delta = mod(target, COUNT) - current;
-      if (delta > COUNT / 2) delta -= COUNT;
-      if (delta < -COUNT / 2) delta += COUNT;
-      return offset + delta;
-    });
-  }, [scrollSlot]);
-
-  const pause = () => { setHoverPaused(true); };
-  const resume = () => { lastInput.current = performance.now(); setHoverPaused(false); };
-
-  const number = (index: number) => String(index + 1).padStart(2, '0');
+  /* landscape phones: no pinned stage — the chapter becomes stacked scenes */
+  if (layout === 'landscape') {
+    return (
+      <PinnedSection id="services">
+        <div className={styles.stacked} ref={rootRef}>
+          <header className={styles.stackHead}>
+            <h2 className={styles.label}><b>03</b> — {copy.label}</h2>
+            <p className={styles.stackIntro}>{copy.intro.join(' · ')}</p>
+            <p className={styles.stackLead}>{copy.lead}</p>
+            <div className={styles.stackOrb} data-orb-slot aria-hidden="true" />
+          </header>
+          {copy.items.map((item, i) => (
+            <section key={i} className={styles.stackScene} style={{ ...accentVars(i), '--chars': longestWord(item.title) } as Vars}>
+              <div className={styles.stackCopy}>
+                <p className={styles.index}><b>{pad(i + 1)}</b><span>/ {pad(SERVICE_COUNT)}</span></p>
+                <h3 className={styles.title}>{item.title.map((line) => <span key={line} className={styles.mask}><span>{line}</span></span>)}</h3>
+                <p className={styles.line}>{item.line}</p>
+                <ul className={styles.caps}>{item.caps.map((cap) => <li key={cap}>{cap}</li>)}</ul>
+              </div>
+              <ServiceStill index={i} draw={copy.draw} />
+            </section>
+          ))}
+          <p className="route-station" data-route-station><b>03</b> / {dictionary.route.services}</p>
+        </div>
+      </PinnedSection>
+    );
+  }
 
   return (
     <PinnedSection id="services">
       <div
-        ref={layoutRef}
-        className={`services-layout dir-${direction > 0 ? 'fwd' : 'back'}`}
-        data-active-service={displayed}
-        data-scroll-slot={scrollSlot}
-        style={{ clipPath: `inset(0 0 ${exit * 100}% 0)` }}
+        ref={rootRef}
+        className={styles.root}
+        data-active={active}
+        style={{ '--tc': tc, ...accentVars(active) } as Vars}
       >
-        <div className="services-heading">
-          <p style={{ opacity: headingReveal, transform: `translateY(${(1 - headingReveal) * 14}px)` }}>{dictionary.services.intro}</p>
-          <h2 aria-label={dictionary.services.title.join(' ')}>
-            {dictionary.services.title.map((word, i) => (
-              <span className="mask" key={word}>
-                <span style={{ transform: `translate3d(0,${(1 - smooth((headingReveal - i * .12) / .76)) * 105}%,0)` }}>{word}</span>
-              </span>
+        {/* the moving world: its own grid, a ruler axis, scene marks */}
+        <div className={styles.world} aria-hidden="true"><div className={styles.worldInner} data-world /></div>
+        <div className={styles.axis} data-axis aria-hidden="true"><i /></div>
+
+        <header className={styles.head}>
+          <h2 className={styles.label}><b>03</b> — {copy.label}</h2>
+          <p className={styles.condensed} aria-hidden="true">{copy.intro.join(' · ')}</p>
+          <nav className={styles.rail} data-rail aria-label={copy.navigation}>
+            {copy.items.map((item, i) => (
+              <button
+                key={i}
+                type="button"
+                className={i === active ? styles.on : ''}
+                aria-current={i === active ? 'step' : undefined}
+                aria-label={`${copy.goTo} ${pad(i + 1)} ${item.title.join(' ')}`}
+                onClick={() => goTo(i)}
+              >
+                <span>{pad(i + 1)}</span>
+              </button>
             ))}
-          </h2>
-        </div>
-        <a href="#footer" className="services-cta" style={{ clipPath: `inset(0 0 0 ${(1 - headingReveal) * 100}%)` }}>{dictionary.services.cta}</a>
+            <i className={styles.railFill} aria-hidden="true" />
+          </nav>
+        </header>
 
-        <section
-          className="services-panel"
-          style={{ clipPath: `inset(0 ${(1 - panelReveal) * 100}% 0 0)` }}
-          aria-live="polite"
-          onPointerEnter={pause}
-          onPointerLeave={resume}
-        >
-          <div className="services-panel-top">
-            <span className="services-number" aria-label={`${number(displayed)} / ${number(COUNT - 1)}`}>
-              <span className="roll">
-                {previous && <span key={`o${previous.id}`} className="roll-out">{number(previous.index)}</span>}
-                <span key={`i${displayed}-${previous?.id ?? 0}`} className={previous ? 'roll-in' : ''}>{number(displayed)}</span>
-              </span>
-              <span className="total">/ {number(COUNT - 1)}</span>
-            </span>
-            <div className="services-nav">
-              <button type="button" onClick={() => goTo(displayed - 1)} aria-label={dictionary.services.previous}>←</button>
-              <button type="button" onClick={() => goTo(displayed + 1)} aria-label={dictionary.services.next}>→</button>
-            </div>
-          </div>
-
-          <div className="services-copy-stage">
-            {previous && previousService && (
-              <div className="services-copy is-out" key={`out-${previous.id}`} aria-hidden="true">
-                <h3>
-                  <span className="mask"><span>{previousService.title[0]}</span></span>
-                  <span className="mask mask--block"><strong>{previousService.title[1]}</strong></span>
-                </h3>
-                <p className="mask"><span>{previousService.description}</span></p>
-              </div>
-            )}
-            <div className={`services-copy ${previous ? 'is-in' : ''}`} key={`in-${displayed}-${previous?.id ?? 0}`}>
-              <h3>
-                <span className="mask"><span>{service.title[0]}</span></span>
-                <span className="mask mask--block"><strong>{service.title[1]}</strong></span>
-              </h3>
-              <p className="mask"><span>{service.description}</span></p>
-            </div>
-          </div>
-          <div className="services-timer"><i ref={timerRef} /></div>
-        </section>
-
-        <div className="services-orb-stage" data-orb-slot aria-hidden="true" style={{ opacity: listReveal }}>
-          <span className="stage-label">{dictionary.services.form} / {number(displayed)}</span>
-        </div>
-
-        <nav
-          className="services-index"
-          aria-label={dictionary.services.navigation}
-          onPointerEnter={pause}
-          onPointerLeave={resume}
-        >
-          {dictionary.services.items.map((item, itemIndex) => (
-            <button
-              key={itemIndex}
-              type="button"
-              className={itemIndex === displayed ? 'is-active' : ''}
-              aria-current={itemIndex === displayed ? 'true' : undefined}
-              onClick={() => goTo(itemIndex)}
-              style={{
-                clipPath: `inset(0 0 ${(1 - smooth((listReveal - itemIndex * .08) / .6)) * 100}% 0)`,
-              }}
-            >
-              <span>{number(itemIndex)}</span>
-              <span>{item.title[0]} {item.title[1]}</span>
-              <i />
-            </button>
-          ))}
-        </nav>
-
-        <p className="route-station services-station" data-route-station><b>03</b> / {dictionary.route.services}</p>
-
-        <div className="services-scope" style={{ clipPath: `inset(0 ${(1 - listReveal) * 100}% 0 0)` }}>
-          <span className="services-scope-label">{dictionary.services.focus}</span>
-          {service.scope.slice(0, 3).map((item, i) => (
-            <p key={`${displayed}-${i}`} className="scope-item" style={{ animationDelay: `${.12 + i * .07}s` }}>{item}</p>
+        {/* intro: three disciplines that condense into the axis */}
+        <div className={styles.intro} aria-hidden="true">
+          {copy.intro.map((word, i) => (
+            <span key={word} className={styles.word} style={{ '--i': i } as Vars}><span>{word}</span></span>
           ))}
         </div>
+        <p className={styles.lead}>{copy.lead}</p>
+        <p className={styles.hint} data-hint aria-hidden="true">{copy.scroll}<i /></p>
+
+        {/* typography travels inside its own column; the world travels full width */}
+        <div className={styles.copies} data-copies>
+          <SceneCopy items={copy.items} />
+        </div>
+        <div className={styles.track} data-track>
+          <div className={styles.marks} aria-hidden="true">
+            {copy.items.map((item, i) => <span key={i} style={{ '--i': i } as Vars}><b>{pad(i + 1)}</b>{item.title.join(' ')}</span>)}
+          </div>
+        </div>
+
+        <div className={styles.area} data-area {...(layout === 'portrait' ? { 'data-orb-slot': '' } : {})}>
+          <canvas className={styles.drawing} data-canvas aria-hidden="true" />
+        </div>
+
+        <p className={styles.counter} aria-live="polite">
+          <b>{pad(active + 1)}</b> / {pad(SERVICE_COUNT)} · {copy.items[active].title.join(' ')}
+        </p>
+        <p className={styles.next} aria-hidden="true">{copy.next}</p>
+        <p className={`route-station ${styles.station}`} data-route-station><b>03</b> / {dictionary.route.services}</p>
       </div>
-
-      <style jsx>{`
-        .services-layout { position: relative; height: 100%; display: grid; grid-template-columns: repeat(var(--grid-cols),var(--grid-block-size)); grid-template-rows: repeat(12,var(--grid-block-size)); overflow: hidden; }
-        .mask { display: block; overflow: hidden; }
-        .mask > * { display: inline-block; }
-        .services-heading { grid-column: 1 / 12; grid-row: 2 / 4; align-self: end; padding-bottom: 8px; }
-        .services-heading p { font-size: 13px; color: var(--text-tertiary); margin-bottom: 7px; }
-        .services-heading h2 { display: flex; gap: .28em; font: 200 clamp(25px,2.45vw,38px)/1 var(--font-display); letter-spacing: -.035em; color: var(--text-primary); white-space: nowrap; }
-        .services-heading h2 .mask > span { will-change: transform; }
-        .services-cta { grid-column: -3 / -1; grid-row: 3 / 4; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); font-size: 14px; color: var(--text-secondary); transition: background .3s ease, color .3s ease; }
-        .services-cta:hover { background: var(--text-primary); color: var(--bg-canvas); }
-
-        .services-panel { grid-column: 1 / 7; grid-row: 4 / 10; padding: 24px; border: 1px solid var(--border-primary); overflow: hidden; display: flex; flex-direction: column; background: var(--bg-canvas); }
-        .services-panel-top { display: flex; align-items: flex-start; justify-content: space-between; }
-        .services-number { display: flex; align-items: baseline; gap: 10px; font: 200 clamp(38px,3.4vw,58px)/1 var(--font-display); letter-spacing: -.04em; color: var(--text-primary); }
-        .services-number .total { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
-        .roll { position: relative; display: inline-block; overflow: hidden; height: 1em; min-width: 1.25em; }
-        .roll > span { display: block; }
-        .roll-out { position: absolute; inset: 0 auto auto 0; animation: rollOut .62s var(--ease-in-out-cubic) both; }
-        .roll-in { animation: rollIn .82s .08s var(--ease-out-expo) both; }
-        .dir-back .roll-out { animation-name: rollOutBack; }
-        .dir-back .roll-in { animation-name: rollInBack; }
-        .services-nav { display: flex; gap: 5px; }
-        .services-nav button { width: 38px; height: 34px; border: 1px solid var(--border-primary); color: var(--text-secondary); transition: color .25s ease, background .25s ease; }
-        .services-nav button:hover { color: var(--bg-canvas); background: var(--text-primary); }
-
-        .services-copy-stage { position: relative; flex: 1; min-height: 0; }
-        .services-copy { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
-        .services-panel h3 { display: flex; flex-direction: column; align-items: flex-start; font: 200 clamp(34px,3.6vw,58px)/1.04 var(--font-display); letter-spacing: -.05em; color: var(--text-primary); }
-        .services-panel h3 strong { font-weight: 200; color: var(--bg-canvas); background: var(--text-primary); padding: 0 10px 5px; }
-        .mask--block { margin-top: 2px; }
-        .services-panel p { max-width: 520px; margin-top: 22px; font: 300 14px/1.55 var(--font-sans); color: var(--text-secondary); }
-        .services-panel p > span { display: block; }
-
-        /* incoming: lines rise through their masks, staggered */
-        .is-in h3 .mask:first-child > * { animation: lineIn .9s .1s var(--ease-out-expo) both; }
-        .is-in h3 .mask--block > * { animation: blockIn .95s .18s var(--ease-out-expo) both; }
-        .is-in p > span { animation: lineIn .9s .3s var(--ease-out-expo) both; }
-        /* outgoing: lines leave upward first, description slightly later */
-        .is-out h3 .mask:first-child > * { animation: lineOut .55s var(--ease-in-out-cubic) both; }
-        .is-out h3 .mask--block > * { animation: blockOut .55s .05s var(--ease-in-out-cubic) both; }
-        .is-out p > span { animation: lineOut .5s .08s var(--ease-in-out-cubic) both; }
-        .dir-back .is-in h3 .mask:first-child > *, .dir-back .is-in p > span { animation-name: lineInBack; }
-        .dir-back .is-out h3 .mask:first-child > *, .dir-back .is-out p > span { animation-name: lineOutBack; }
-
-        .services-timer { height: 1px; margin-top: 22px; background: var(--border-primary); overflow: hidden; }
-        .services-timer i { display: block; width: 100%; height: 1px; background: var(--text-primary); transform-origin: left; transform: scaleX(0); }
-
-        .services-orb-stage { grid-column: 7 / -7; grid-row: 4 / 10; position: relative; border-block: 1px solid var(--border-primary); pointer-events: none; }
-        .stage-label { position: absolute; left: 12px; bottom: 11px; font: 10px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
-
-        .services-index { grid-column: -7 / -1; grid-row: 4 / 10; display: grid; grid-template-rows: repeat(6,1fr); border: 1px solid var(--border-primary); border-bottom: 0; background: var(--bg-canvas); }
-        .services-index button { position: relative; min-width: 0; display: grid; grid-template-columns: 48px 1fr; align-items: center; text-align: left; border-bottom: 1px solid var(--border-primary); color: var(--text-tertiary); overflow: hidden; isolation: isolate; transition: color .35s ease; }
-        .services-index button > span:first-child { padding-left: 16px; font: 500 10px/1 var(--font-mono); }
-        .services-index button > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 clamp(11px,.82vw,13px)/1 var(--font-sans); letter-spacing: .02em; transition: transform .6s var(--ease-out-expo); }
-        .services-index button > i { position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--text-primary) 5%, transparent); transform: scaleX(0); transform-origin: left; transition: transform .7s var(--ease-out-expo); }
-        .services-index button:hover, .services-index button.is-active { color: var(--text-primary); }
-        .services-index button.is-active > span:nth-child(2), .services-index button:hover > span:nth-child(2) { transform: translateX(8px); }
-        .services-index button.is-active > i { transform: scaleX(1); }
-        .dir-back .services-index button > i { transform-origin: right; }
-
-        .services-scope { grid-column: 1 / -1; grid-row: 10 / 11; display: grid; grid-template-columns: 2fr repeat(3,3fr); border: 1px solid var(--border-primary); background: var(--bg-canvas); }
-        .services-scope > * { display: flex; align-items: center; padding: 0 18px; border-right: 1px solid var(--border-primary); }
-        .services-scope-label { font: 500 10px/1 var(--font-mono); letter-spacing: .08em; color: var(--text-tertiary); }
-        .scope-item { font: 300 clamp(10px,.76vw,12px)/1.35 var(--font-sans); color: var(--text-secondary); animation: scopeIn .8s var(--ease-out-expo) both; }
-
-        @keyframes lineIn { from { transform: translate3d(0,105%,0); } to { transform: none; } }
-        @keyframes lineOut { to { transform: translate3d(0,-105%,0); } }
-        @keyframes lineInBack { from { transform: translate3d(0,-105%,0); } to { transform: none; } }
-        @keyframes lineOutBack { to { transform: translate3d(0,105%,0); } }
-        @keyframes blockIn { from { clip-path: inset(0 100% 0 0); transform: translate3d(-18px,0,0); } to { clip-path: inset(0); transform: none; } }
-        @keyframes blockOut { to { clip-path: inset(0 0 0 100%); transform: translate3d(18px,0,0); } }
-        @keyframes rollIn { from { transform: translate3d(0,100%,0); } to { transform: none; } }
-        @keyframes rollOut { to { transform: translate3d(0,-100%,0); } }
-        @keyframes rollInBack { from { transform: translate3d(0,-100%,0); } to { transform: none; } }
-        @keyframes rollOutBack { to { transform: translate3d(0,100%,0); } }
-        @keyframes scopeIn { from { clip-path: inset(0 0 100% 0); transform: translate3d(0,8px,0); } to { clip-path: inset(0); transform: none; } }
-
-        @media (min-width: 768px) and (max-height: 800px) {
-          .services-panel { padding: 18px 22px; }
-          .services-panel p { margin-top: 14px; font-size: 13px; }
-        }
-        @media (max-width: 767px) {
-          :global(html[data-layout='flow']) .services-layout { display: block; padding: 100px 20px 40px; overflow: auto; transform: none !important; }
-          :global(html[data-layout='flow']) .services-heading h2 { flex-direction: column; gap: 0; white-space: normal; font-size: 34px; }
-          :global(html[data-layout='flow']) .services-cta { position: absolute; right: 20px; top: 34px; padding: 12px; }
-          :global(html[data-layout='flow']) .services-panel { margin-top: 30px; min-height: 360px; padding: 22px 18px; }
-          :global(html[data-layout='flow']) .services-panel h3 { font-size: 40px; }
-          :global(html[data-layout='flow']) .services-orb-stage { height: 280px; }
-          :global(html[data-layout='flow']) .services-index { height: 300px; }
-          :global(html[data-layout='flow']) .services-scope { display: none; }
-        }
-        .services-station { display: none; }
-
-        /* ---------------------------------------------------------- portrait
-           label / RELIABLE CREATIVE VERSATILE / orb window / 01 / 06 ← →
-           title / description / timer / 03 station. Same state machine. */
-        :global(html[data-layout='portrait']) .services-layout {
-          display: grid; grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: auto minmax(0, 1fr) auto auto;
-          row-gap: clamp(10px, 1.8svh, 18px);
-          padding: calc(var(--grid-block-size) + clamp(12px, 2.4svh, 26px)) 0 calc(clamp(12px, 2svh, 20px) + env(safe-area-inset-bottom));
-        }
-        :global(html[data-layout='portrait']) .services-heading { grid-column: 1; grid-row: 1; padding: 0; }
-        :global(html[data-layout='portrait']) .services-heading p { font-size: 11px; margin-bottom: 6px; }
-        :global(html[data-layout='portrait']) .services-heading h2 { flex-wrap: wrap; column-gap: .28em; row-gap: 0; white-space: normal; font-size: clamp(24px, 7.4vw, 44px); line-height: 1.04; }
-        :global(html[data-layout='portrait']) .services-cta,
-        :global(html[data-layout='portrait']) .services-index,
-        :global(html[data-layout='portrait']) .services-scope { display: none; }
-        :global(html[data-layout='portrait']) .services-orb-stage { grid-column: 1; grid-row: 2; min-height: 0; border: 0; }
-        :global(html[data-layout='portrait']) .stage-label { display: none; }
-        :global(html[data-layout='portrait']) .services-panel { grid-column: 1; grid-row: 3; padding: clamp(14px, 4vw, 22px); }
-        :global(html[data-layout='portrait']) .services-number { font-size: clamp(30px, 9vw, 54px); }
-        :global(html[data-layout='portrait']) .services-nav { gap: 6px; }
-        :global(html[data-layout='portrait']) .services-nav button { width: 44px; height: 44px; font-size: 16px; }
-        :global(html[data-layout='portrait']) .services-copy-stage { display: grid; flex: none; margin-top: clamp(10px, 2svh, 22px); }
-        :global(html[data-layout='portrait']) .services-copy { position: relative; inset: auto; grid-area: 1 / 1; justify-content: flex-start; }
-        :global(html[data-layout='portrait']) .services-panel h3 { font-size: clamp(26px, 9vw, 52px); }
-        :global(html[data-layout='portrait']) .services-panel h3 > .mask { white-space: nowrap; }
-        :global(html[data-layout='portrait']) .services-panel h3 strong { padding: 0 8px 4px; }
-        /* fixed three-line box: every service has the same panel height, so the
-           orb window above never resizes between services */
-        :global(html[data-layout='portrait']) .services-panel p { margin-top: 12px; font-size: 14px; line-height: 1.5; height: 4.5em; overflow: hidden; }
-        :global(html[data-layout='portrait']) .services-timer { margin-top: 14px; }
-        :global(html[data-layout='portrait']) .services-station { display: flex; grid-column: 1; grid-row: 4; }
-        @media (max-height: 620px) {
-          :global(html[data-layout='portrait']) .services-panel p { height: 3em; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .services-copy *, .roll *, .scope-item { animation: none !important; }
-        }
-
-        /* ---------------------------------------------------------- landscape phone
-           heading / orb window | number · title · description · timer */
-        :global(html[data-layout='landscape']) .services-layout {
-          display: grid; height: auto; min-height: 100svh;
-          grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto;
-          column-gap: 20px; row-gap: 10px; padding: calc(var(--grid-block-size) + 12px) 0 calc(14px + env(safe-area-inset-bottom));
-        }
-        :global(html[data-layout='landscape']) .services-heading { grid-column: 1 / -1; grid-row: 1; padding: 0; }
-        :global(html[data-layout='landscape']) .services-heading p { display: none; }
-        :global(html[data-layout='landscape']) .services-heading h2 { font-size: clamp(20px, 3.4vw, 34px); flex-wrap: wrap; column-gap: .28em; white-space: normal; }
-        :global(html[data-layout='landscape']) .services-cta, :global(html[data-layout='landscape']) .services-index, :global(html[data-layout='landscape']) .services-scope, :global(html[data-layout='landscape']) .stage-label { display: none; }
-        :global(html[data-layout='landscape']) .services-orb-stage { grid-column: 1; grid-row: 2; min-height: 0; border: 0; }
-        :global(html[data-layout='landscape']) .services-panel { grid-column: 2; grid-row: 2; align-self: center; padding: 14px 18px; }
-        :global(html[data-layout='landscape']) .services-number { font-size: clamp(26px, 4.2vw, 40px); }
-        :global(html[data-layout='landscape']) .services-nav button { width: 44px; height: 44px; font-size: 16px; }
-        :global(html[data-layout='landscape']) .services-copy-stage { display: grid; flex: none; margin-top: 10px; }
-        :global(html[data-layout='landscape']) .services-copy { position: relative; inset: auto; grid-area: 1 / 1; justify-content: flex-start; }
-        :global(html[data-layout='landscape']) .services-panel h3 { font-size: clamp(22px, 4vw, 40px); }
-        :global(html[data-layout='landscape']) .services-panel h3 > .mask { white-space: nowrap; }
-        :global(html[data-layout='landscape']) .services-panel h3 strong { padding: 0 8px 3px; }
-        :global(html[data-layout='landscape']) .services-panel p { margin-top: 10px; font-size: 13px; line-height: 1.5; height: 4.5em; overflow: hidden; }
-        :global(html[data-layout='landscape']) .services-timer { margin-top: 10px; }
-        :global(html[data-layout='landscape']) .services-station { display: flex; grid-column: 1 / -1; grid-row: 3; }
-      `}</style>
     </PinnedSection>
   );
 }

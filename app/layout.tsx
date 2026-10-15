@@ -95,11 +95,11 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${montserrat.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${montserrat.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('site-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;var l=localStorage.getItem('site-language');if(l==='pl'||l==='en')document.documentElement.lang=l;}catch(e){}try{var w=innerWidth,h=innerHeight,bs=Math.round(h/12),pr=bs*2,mw=Math.round(w*.9/pr)*pr;mw=Math.max(Math.min(mw,Math.floor(w*.94/pr)*pr),6*bs);var pin=h>=648&&w/h>=1.418&&Math.floor(mw/bs)>=16;document.documentElement.dataset.layout=pin?'pinned':(w/h<1?'portrait':(w>=960&&h>=600?'pinned':'landscape'));}catch(e){}})();`,
+            __html: `(function(){try{var l=localStorage.getItem('site-language');if(l==='pl'||l==='en')document.documentElement.lang=l;}catch(e){}try{var w=innerWidth,h=innerHeight,bs=Math.round(h/12),pr=bs*2,mw=Math.round(w*.9/pr)*pr;mw=Math.max(Math.min(mw,Math.floor(w*.94/pr)*pr),6*bs);var pin=h>=648&&w/h>=1.418&&Math.floor(mw/bs)>=16;document.documentElement.dataset.layout=pin?'pinned':(w/h<1?'portrait':(w>=960&&h>=600?'pinned':'landscape'));}catch(e){}})();`,
           }}
         />
         <script
