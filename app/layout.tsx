@@ -27,7 +27,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'KERN — Creative Development',
+  title: 'KERN · Creative Development',
   description:
     'Independent creative developer specializing in high-end web applications, generative AI systems, 3D WebGL experiences, and motion choreography.',
   keywords: [
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'KERN' }],
   creator: 'KERN',
   openGraph: {
-    title: 'KERN — Creative Development',
+    title: 'KERN · Creative Development',
     description:
       'Independent creative developer specializing in high-end web applications, generative AI systems, 3D WebGL experiences, and motion choreography.',
     siteName: 'KERN',
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'KERN — Creative Development',
+    title: 'KERN · Creative Development',
     description:
       'Independent creative developer specializing in high-end web applications, generative AI systems, 3D WebGL experiences, and motion choreography.',
   },
@@ -73,7 +73,7 @@ export default function RootLayout({
     '@graph': [
       {
         '@type': 'WebSite',
-        name: 'KERN — Creative Development',
+        name: 'KERN · Creative Development',
         description:
           'Independent creative developer specializing in high-end web applications, generative AI systems, 3D WebGL experiences, and motion choreography.',
       },

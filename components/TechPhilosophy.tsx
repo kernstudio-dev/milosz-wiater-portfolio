@@ -36,7 +36,7 @@ export function TechPhilosophy() {
           </div>
           <small>translateX: {Math.round(ticker)}px</small>
         </div>
-        <p className="route-station about-station" data-route-station><b>04</b> / {dictionary.route.about}</p>
+        <p className="route-station about-station" data-route-station>{dictionary.route.about}</p>
       </div>
 
       <style jsx>{`

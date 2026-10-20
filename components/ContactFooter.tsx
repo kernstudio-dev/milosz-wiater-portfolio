@@ -24,7 +24,7 @@ export function ContactFooter() {
       <div className="footer-layout">
         {/* portrait only: the last orb window and the route's END */}
         <div className="footer-orb-slot" data-orb-slot aria-hidden="true" />
-        <p className="route-station footer-station" data-route-station><b>05</b> / {dictionary.route.contact} <em>● {dictionary.route.end}</em></p>
+        <p className="route-station footer-station" data-route-station>{dictionary.route.contact} <em>● {dictionary.route.end}</em></p>
         <div className="footer-contact" style={{ clipPath: `inset(0 0 ${(1 - reveal(0)) * 100}% 0)` }}>
           <h2>{dictionary.contact.contact}</h2>
           <a href="mailto:contact@kern.dev">contact@kern.dev</a>

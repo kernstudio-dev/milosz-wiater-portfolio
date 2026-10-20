@@ -28,8 +28,8 @@ export function HeroSection() {
   return (
     <PinnedSection id="hero">
       <div className={`hero-layout ${entered ? 'hero-layout--entered' : ''}`}>
-        <p className="hero-label hero-label--top-left" style={{ clipPath: `inset(0 ${labelsOut * 100}% 0 0)` }}><span>01.</span> {dictionary.hero.role}</p>
-        <p className="hero-label hero-label--top-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}><span>02.</span> {dictionary.hero.availability}</p>
+        <p className="hero-label hero-label--top-left" style={{ clipPath: `inset(0 ${labelsOut * 100}% 0 0)` }}>{dictionary.hero.role}</p>
+        <p className="hero-label hero-label--top-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}>{dictionary.hero.availability}</p>
 
         <div className="hero-words hero-words--left">
           <span className="word-mask"><span style={{ transform: `translate3d(0,${-wordsOut(0) * 105}%,0)` }}>{dictionary.hero.shaping}</span></span>
@@ -52,14 +52,13 @@ export function HeroSection() {
         </div>
 
         <div className="hero-label hero-label--bottom-left" style={{ clipPath: `inset(0 ${labelsOut * 100}% 0 0)` }}>
-          <span>03.</span>
           <a href="mailto:contact@kern.dev">M: CONTACT@KERN.DEV</a>
         </div>
-        <a href="#footer" className="hero-label hero-label--bottom-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}><span>04.</span> {dictionary.hero.open}</a>
+        <a href="#footer" className="hero-label hero-label--bottom-right" style={{ clipPath: `inset(0 0 0 ${labelsOut * 100}%)` }}>{dictionary.hero.open}</a>
 
         {/* portrait only: the orb's window and the route's first station */}
         <div className="hero-orb-slot" data-orb-slot aria-hidden="true" />
-        <p className="route-station hero-station" data-route-station><b>01</b> / {dictionary.route.start}</p>
+        <p className="route-station hero-station" data-route-station>{dictionary.route.start}</p>
       </div>
 
       <style jsx>{`

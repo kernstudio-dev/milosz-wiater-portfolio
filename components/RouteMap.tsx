@@ -165,10 +165,10 @@ export function RouteMap({ id, metrics, hole, enter, leave, portrait }: RouteMap
         <rect x={x - 3.5} y={top - 3.5} width={7} height={7} className="route-node" />
         <rect x={x - 3.5} y={bottom - 3.5} width={7} height={7} className="route-node route-node--next" />
         <text x={x - 14} y={top + 3.5} textAnchor="end" className="route-text">
-          <tspan className="route-text--num">{from.number}</tspan><tspan dx="8">/ {labels[from.label]}</tspan>
+          <tspan>{labels[from.label]}</tspan>
         </text>
         <text x={x - 14} y={bottom + 3.5} textAnchor="end" className="route-text">
-          <tspan className="route-text--num">{into.number}</tspan><tspan dx="8">/ {labels[into.label]}</tspan>
+          <tspan>{labels[into.label]}</tspan>
         </text>
       </g>
     );
@@ -205,15 +205,9 @@ export function RouteMap({ id, metrics, hole, enter, leave, portrait }: RouteMap
         </g>
       )}
       <text x={textX} y={nodeY - 10} textAnchor={anchor} className="route-text">
-        <tspan className="route-text--num">{s.number}</tspan>
-        <tspan dx="8">/ {labels[s.label]}</tspan>
+        <tspan>{labels[s.label]}</tspan>
         {s.end && <tspan dx="14" className="route-text--num">● {labels.end}</tspan>}
       </text>
-      {(id === 'hero' || s.end) && (
-        <text x={textX} y={nodeY + 20} textAnchor={anchor} className="route-text route-text--coord">
-          X {String(s.from.col).padStart(2, '0')} · Y {String(STATION_ROW).padStart(2, '0')}
-        </text>
-      )}
     </svg>
   );
 }

@@ -168,11 +168,9 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
     tour[`--y${i}`] = focus(c.y);
   });
 
-  const total = String(PROJECTS.length).padStart(2, '0');
-  const mark = (number: string, label: string, light = false) => (
+  const mark = (label: string, light = false) => (
     <div className={`${styles.mark} ${light ? styles.markLight : ''}`}>
       <i aria-hidden="true" />
-      <span className={styles.markNum}>{number}</span>
       <span className={styles.markLabel}>{label}</span>
     </div>
   );
@@ -198,7 +196,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
       {/* The page's route: one rail in the left gutter, a station at every chapter. */}
       <div className={styles.rail} aria-hidden="true" />
 
-      {/* 00 — PROJECT: full-bleed (matches the route transition), insets into a framed window */}
+      {/* 0 PROJECT: full-bleed (matches the route transition), insets into a framed window */}
       <section className={styles.hero} data-scene style={{ '--chars': longestWord(titleLines) } as Vars}>
         <div className={styles.heroSticky}>
           <div className={styles.heroMedia}>
@@ -208,7 +206,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
           <span className={styles.heroCorners} aria-hidden="true"><i /><i /><i /><i /></span>
           <div className={styles.heroCopy}>
             <div className={styles.kicker}>
-              <span>{dictionary.caseStudy.project} / {project.number}</span>
+              <span>{dictionary.caseStudy.project}</span>
               <span>{copy.category}</span>
               <span>{project.year}</span>
               {status && <span className={styles.status}>{status}</span>}
@@ -226,19 +224,18 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </div>
       </section>
 
-      {/* 01 — CONTEXT: oversized statement, index column, floating detail */}
+      {/* 1 CONTEXT: oversized statement, index column, floating detail */}
       <section className={styles.statement} data-scene>
-        <div className={styles.statementHead}>{mark('01', dictionary.caseStudy.overview)}</div>
+        <div className={styles.statementHead}>{mark(dictionary.caseStudy.overview)}</div>
         <div className={styles.statementAside}>
-          <span className={styles.statementIndex}>{project.number}<small>/ {total}</small></span>
-          <span className={styles.statementCategory}>{copy.category}</span>
+                    <span className={styles.statementCategory}>{copy.category}</span>
         </div>
         <p className={styles.statementText} style={{ '--n': statementWords.length } as Vars}>
           {statementWords.map((word, i) => <span key={`${word}-${i}`} style={{ '--i': i } as Vars}>{word} </span>)}
         </p>
         <figure className={styles.detail} style={focusVars(visuals.detail)}>
           <div className={styles.detailMedia}><img src={detailImage} alt={copy.galleryAlt[0]} /></div>
-          <figcaption><span>{dictionary.caseStudy.figure} 01</span>{copy.galleryAlt[0]}</figcaption>
+          <figcaption>{copy.galleryAlt[0]}</figcaption>
         </figure>
         <dl className={styles.facts}>
           <div style={{ '--d': '0s' } as Vars}><dt>{dictionary.caseStudy.role}</dt><dd>{copy.role}</dd></div>
@@ -248,24 +245,23 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </dl>
       </section>
 
-      {/* 02 — CHALLENGE: sticky cinematic crop, statement reveals over it */}
+      {/* 2 CHALLENGE: sticky cinematic crop, statement reveals over it */}
       <section className={styles.challenge} data-scene>
         <div className={styles.challengeSticky}>
           <div className={styles.challengeMedia} style={focusVars(visuals.challenge)}><img src={challengeImage} alt={copy.galleryAlt[1]} /></div>
           <div className={styles.challengeCopy}>
-            {mark('02', dictionary.caseStudy.challenge, true)}
+            {mark(dictionary.caseStudy.challenge, true)}
             <h2>{story.challengeTitle}</h2>
             <p>{story.challenge}</p>
           </div>
         </div>
       </section>
 
-      {/* 03 — SYSTEM: the full interface as an annotated map; the camera tours each build point */}
+      {/* 3 SYSTEM: the full interface as an annotated map; the camera tours each build point */}
       <section className={styles.system} data-scene style={tour}>
         <div className={styles.systemSticky}>
           <div className={styles.systemHead}>
-            {mark('03', dictionary.caseStudy.build)}
-            <span className={styles.systemCount}>01<i>—</i>{String(story.build.length).padStart(2, '0')}</span>
+            {mark(dictionary.caseStudy.build)}
           </div>
           <div className={styles.systemBody}>
             <figure className={styles.blueprint}>
@@ -273,19 +269,17 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
                 <div className={styles.bpZoom}><img src={project.blueprint} alt="" /></div>
                 {visuals.crops.slice(0, 4).map((c, i) => (
                   <span key={i} className={styles.bpMarker} style={{ '--mx': c.x, '--my': c.y, '--i': i } as Vars} aria-hidden="true">
-                    <b>{String(i + 1).padStart(2, '0')}</b>
                   </span>
                 ))}
               </div>
               <span className={styles.bpRulerX} aria-hidden="true" />
               <span className={styles.bpRulerY} aria-hidden="true" />
-              <figcaption><span>{dictionary.caseStudy.figure} 03</span>{dictionary.caseStudy.systemMap}</figcaption>
+              <figcaption>{dictionary.caseStudy.systemMap}</figcaption>
             </figure>
             <ol className={styles.bpList}>
               {story.build.map((item, i) => (
                 <li key={item.title} style={{ '--i': i } as Vars}>
-                  <span className={styles.bpCrop} style={crop(i)} aria-hidden="true"><img src={project.blueprint} alt="" /><b>{String(i + 1).padStart(2, '0')}</b></span>
-                  <span className={styles.bpIndex}>{String(i + 1).padStart(2, '0')}</span>
+                  <span className={styles.bpCrop} style={crop(i)} aria-hidden="true"><img src={project.blueprint} alt="" /></span>
                   <h3>{item.title}</h3>
                   <p>{item.text}</p>
                 </li>
@@ -296,9 +290,9 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </div>
       </section>
 
-      {/* 04 — APPROACH: a purely typographic spread */}
+      {/* 4 APPROACH: a purely typographic spread */}
       <section className={styles.approach} data-scene>
-        {mark('04', dictionary.caseStudy.approach)}
+        {mark(dictionary.caseStudy.approach)}
         <h2 className={styles.approachTitle}>{story.approachTitle}</h2>
         <div className={styles.approachGrid}>
           <span className={styles.approachAside}>{copy.subtitle}</span>
@@ -306,15 +300,15 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
           <div className={styles.stack}>
             <span className={styles.stackLabel}>{dictionary.caseStudy.stack}</span>
             <ol>
-              {project.technologies.map((technology, i) => (
-                <li key={technology}><span>{String(i + 1).padStart(2, '0')}</span>{technology}</li>
+              {project.technologies.map((technology) => (
+                <li key={technology}>{technology}</li>
               ))}
             </ol>
           </div>
         </div>
       </section>
 
-      {/* 05 — RESULT: the product, framed and staged */}
+      {/* 5 RESULT: the product, framed and staged */}
       <section className={styles.result} data-scene>
         <div className={styles.resultSticky}>
           <div className={styles.resultStage}>
@@ -323,7 +317,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
             </div>
           </div>
           <div className={styles.resultCard}>
-            {mark('05', dictionary.caseStudy.result)}
+            {mark(dictionary.caseStudy.result)}
             <p>{story.closing}</p>
             <span className={styles.resultMeta}>{copy.category} · {project.year}{status ? ` · ${status}` : ''}</span>
             {project.link && (
@@ -335,7 +329,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
         </div>
       </section>
 
-      {/* 06 — NEXT: the route continues into the next project */}
+      {/* 6 NEXT: the route continues into the next project */}
       <section className={styles.next} data-scene style={{ '--lines': nextLines.length, '--chars': longestWord(nextLines) } as Vars}>
         <div className={styles.nextSticky}>
           <a
@@ -346,9 +340,7 @@ export function ProjectStory({ project, next }: ProjectStoryProps) {
             aria-label={`${dictionary.caseStudy.viewNext}: ${next.title}`}
             onClick={openNext}
           >
-            <span className={styles.nextHead}>{mark('06', dictionary.caseStudy.nextProject)}</span>
-            <span className={styles.nextCount}>{next.number} / {total}</span>
-            <span className={styles.nextNumber} aria-hidden="true">{next.number}</span>
+            <span className={styles.nextHead}>{mark(dictionary.caseStudy.nextProject)}</span>
             <span className={styles.nextRoute} aria-hidden="true"><i /></span>
             <div className={styles.nextPreview} ref={nextPreview}><img src={next.media.src} alt={nextCopy.mediaAlt} /></div>
             <span className={styles.nextTitle} data-next-title>

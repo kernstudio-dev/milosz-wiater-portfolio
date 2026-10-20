@@ -16,7 +16,6 @@ const smooth = (value: number) => { const p = clamp01(value); return p * p * (3 
 const SCROLL_START = 1 / 6;
 const SCROLL_END = .8;
 const SWITCH_MS = 1500;
-const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Section progress at which the viewer rests on project `index` (used when returning from a case study). */
 export function workProgressForProject(index: number) {
@@ -167,7 +166,7 @@ export function SelectedWork() {
             </a>
             <figcaption className="plate-caption">
               <span className="cap-roll" key={`c1-${switching}`}>
-                <b>{work.plate} {project.number}</b><em>/ {pad(COUNT)}</em><span className="cap-name">{project.title}</span>
+                <span className="cap-name">{project.title}</span>
               </span>
               <span className="cap-roll cap-right" key={`c2-${switching}`}>
                 {work.capture} · {project.capture.source === 'production' ? work.production : work.localBuild} · {project.capture.viewport}
@@ -192,7 +191,6 @@ export function SelectedWork() {
                 onClick={() => selectProject(itemIndex)}
               >
                 <span className="tab-track" aria-hidden="true"><i /></span>
-                <span className="tab-num">{item.number}</span>
                 <span className="tab-name">{item.title}</span>
                 <span className="tab-meta">{dictionary.projects[item.id].category.split(' / ')[0]}{itemStatus ? ` · ${itemStatus}` : ''}</span>
               </button>
@@ -203,7 +201,7 @@ export function SelectedWork() {
 
         {/* ------------------------------------------------ the project card */}
         <header className="card-head" style={{ opacity: 1 - leave }}>
-          <p className="card-label" style={{ opacity: heading }}><b>02</b><span>{work.label}</span><span className="card-count">{work.count}</span></p>
+          <p className="card-label" style={{ opacity: heading }}><span>{work.label}</span><span className="card-count">{work.count}</span></p>
           <h2 className="card-title">
             {work.title.split(' ').map((word, i) => (
               <span className="mask" key={word}><span style={{ transform: `translate3d(0,${((1 - heading) * 108 - leave * 108).toFixed(2)}%,0)`, transitionDelay: `${i * .06}s` }}>{word}</span></span>
@@ -212,14 +210,6 @@ export function SelectedWork() {
         </header>
 
         <div className="card" style={cardOut}>
-          <div className="card-number" style={reveal(info)}>
-            <span className="roll">
-              {previous && <span key={`o${previous.id}`} className="roll-out">{pad(previous.index + 1)}</span>}
-              <span key={`i${activeIndex}-${previous?.id ?? 0}`} className={previous ? 'roll-in' : ''}>{project.number}</span>
-            </span>
-            <small>/ {pad(COUNT)}</small>
-          </div>
-
           <div className="card-name" style={reveal(info)}>
             {previousProject && (
               <span className="name is-out" key={`t-out-${previous!.id}`} aria-hidden="true">
@@ -261,7 +251,7 @@ export function SelectedWork() {
 
         {/* portrait only: the orb's window beside the heading, and the route station */}
         <div className="work-orb-slot" data-orb-slot aria-hidden="true" />
-        <p className="route-station work-station" data-route-station><b>02</b> / {dictionary.route.work}</p>
+        <p className="route-station work-station" data-route-station>{dictionary.route.work}</p>
       </div>
 
       <style jsx>{`

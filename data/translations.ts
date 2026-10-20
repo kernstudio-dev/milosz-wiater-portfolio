@@ -72,7 +72,7 @@ export type Dictionary = {
     next: string;
     view: string;
     opening: string;
-    /** section micro-copy, e.g. "02 — SELECTED WORK" and "03 CASE STUDIES / 2026" */
+    /** section micro-copy, e.g. "02, SELECTED WORK" and "03 CASE STUDIES / 2026" */
     label: string;
     count: string;
     viewCase: string;
@@ -159,7 +159,7 @@ const en: Dictionary = {
   navigation: {
     links: ['Projects', 'Services', 'About', 'Contact'],
     backTop: 'Back to top', menu: 'Open menu', language: 'Switch language',
-    footer: 'KERN — CREATIVE DEVELOPMENT',
+    footer: 'KERN · CREATIVE DEVELOPMENT',
   },
   hero: {
     role: 'CREATIVE DEVELOPER', availability: 'AVAILABLE WORLDWIDE', shaping: 'SHAPING', concepts: 'CONCEPTS',
@@ -169,7 +169,7 @@ const en: Dictionary = {
     title: 'SELECTED WORK', intro: 'Selected digital products and interactive experiences, from system architecture to launch.',
     cta: 'Start a Project', selectProject: 'Select a project', show: 'Show', previous: 'Previous project', next: 'Next project',
     view: 'VIEW', opening: 'Opening case study',
-    label: 'SELECTED WORK', count: '03 CASE STUDIES / 2026', viewCase: 'VIEW CASE STUDY', viewProject: 'VIEW PROJECT',
+    label: 'SELECTED WORK', count: 'CASE STUDIES / 2026', viewCase: 'VIEW CASE STUDY', viewProject: 'VIEW PROJECT',
     concept: 'CONCEPT', progress: 'IN PROGRESS', plate: 'PLATE', capture: 'CAPTURE', production: 'PRODUCTION', localBuild: 'LOCAL BUILD',
   },
   services: {
@@ -179,23 +179,23 @@ const en: Dictionary = {
     scroll: 'SCROLL',
     navigation: 'Services',
     goTo: 'Go to',
-    next: 'NEXT — ABOUT',
+    next: 'NEXT: ABOUT',
     items: [
-      { title: ['WEBSITES'], line: 'Landing pages, business sites and custom interactive websites — built to be remembered.', caps: ['Landing pages', 'Business websites', 'Interactive / custom sites'] },
+      { title: ['WEBSITES'], line: 'Landing pages, business sites and custom interactive websites, built to be remembered.', caps: ['Landing pages', 'Business websites', 'Interactive / custom sites'] },
       { title: ['E-COMMERCE'], line: 'Stores and product experiences that make buying feel effortless.', caps: ['Online stores', 'Product experiences', 'Custom storefronts', 'Payments & checkout'] },
-      { title: ['WEB', 'APPLICATIONS'], line: 'Dashboards, booking systems and portals — the tools a business runs on.', caps: ['Dashboards', 'Booking systems', 'Client portals', 'Custom business tools'] },
+      { title: ['WEB', 'APPLICATIONS'], line: 'Dashboards, booking systems and portals, the tools a business runs on.', caps: ['Dashboards', 'Booking systems', 'Client portals', 'Custom business tools'] },
       { title: ['MOBILE', 'APPLICATIONS'], line: 'Mobile products and cross-platform apps, designed for the hand.', caps: ['Mobile products', 'Cross-platform apps', 'Custom digital experiences'] },
       { title: ['GROWTH'], line: 'SEO, analytics and campaigns connected into one measurable system.', caps: ['Technical SEO', 'Analytics & conversion tracking', 'Google Ads · Meta Ads', 'Conversion landing pages'] },
-      { title: ['CARE &', 'DEVELOPMENT'], line: 'Maintenance, updates and steady evolution — long after launch.', caps: ['Maintenance & updates', 'Further development', 'Deployment support', 'Long-term evolution'] },
+      { title: ['CARE &', 'DEVELOPMENT'], line: 'Maintenance, updates and steady evolution, long after launch.', caps: ['Maintenance & updates', 'Further development', 'Deployment support', 'Long-term evolution'] },
     ],
     draw: {
       captions: [
-        ['FIG. 01 — LAYOUT SYSTEM', '12 / 8 / 4 COL · 1440 → 834 → 390'],
-        ['FIG. 02 — OBJECT, VARIANT, DECISION', 'VESSEL N°1 · 3 FINISHES · 3 SIZES'],
-        ['FIG. 03 — PRODUCT ARCHITECTURE', 'BOOKING FLOW · 8 SERVICES · 1 JOB'],
-        ['FIG. 04 — GESTURE & CONTEXT', 'SHEET SPRING k 170 · c 14 · THUMB ZONE'],
-        ['FIG. 05 — ITERATIONS', 'CONVERSION RATE · 24 WEEKS · 5 TESTS'],
-        ['FIG. 06 — PRODUCT OVER TIME', 'RELEASES · PATCHES · UPTIME'],
+        ['LAYOUT SYSTEM', '12 / 8 / 4 COL · 1440 → 834 → 390'],
+        ['OBJECT, VARIANT, DECISION', 'VESSEL N°1 · 3 FINISHES · 3 SIZES'],
+        ['PRODUCT ARCHITECTURE', 'BOOKING FLOW · 8 SERVICES · 1 JOB'],
+        ['GESTURE & CONTEXT', 'SHEET SPRING k 170 · c 14 · THUMB ZONE'],
+        ['ITERATIONS', 'CONVERSION RATE · 24 WEEKS · 5 TESTS'],
+        ['PRODUCT OVER TIME', 'RELEASES · PATCHES · UPTIME'],
       ],
       web: {
         viewport: 'VIEWPORT · PX', brand: 'Nord Atelier', nav: 'Work    Studio    Journal    Contact', menu: 'Menu',
@@ -205,9 +205,9 @@ const en: Dictionary = {
         continues: 'CONTINUES',
       },
       shop: {
-        set: 'SET 01 · DAYLIGHT 5600 K · SCALE 1:4', crumb: 'N°01 — OBJECTS / VESSELS', name: 'Vessel N°1', desc: 'Hand-thrown stoneware, matte glaze.',
+        set: 'SET 01 · DAYLIGHT 5600 K · SCALE 1:4', crumb: 'N°01 · OBJECTS / VESSELS', name: 'Vessel N°1', desc: 'Hand-thrown stoneware, matte glaze.',
         finish: 'FINISH', finishes: ['Bone', 'Smoke', 'Rosé'], size: 'SIZE', prices: ['€ 240', '€ 310', '€ 260'],
-        note: 'INCL. VAT · SHIPS IN 2–3 DAYS', add: 'Add to bag', inBag: 'In your bag — 1', delivery: 'FREE DELIVERY · WED 22 OCT',
+        note: 'INCL. VAT · SHIPS IN 2–3 DAYS', add: 'Add to bag', inBag: 'In your bag: 1', delivery: 'FREE DELIVERY · WED 22 OCT',
       },
       app: {
         nodes: [['REQUEST', 'client portal'], ['AVAILABILITY', 'calendar'], ['HOLD SLOT', 'lock · 10 min'], ['PAYMENT', 'card · blik'], ['CONFIRM', 'booking record'], ['NOTIFY', 'sms · e-mail'], ['STAFF', 'schedule'], ['REPORTS', 'daily ledger']],
@@ -215,9 +215,9 @@ const en: Dictionary = {
       },
       mobile: {
         spring: 'SHEET · SPRING', settle: 'k 170 · c 14 · settle 560 ms', context: 'CONTEXT', steps: ['01 LIST', '02 DETAIL', '03 CONFIRMED'],
-        samples: 'FINGER SAMPLES · 60 Hz — SPACING = VELOCITY', thumb: ['THUMB', 'ZONE'],
+        samples: 'FINGER SAMPLES · 60 Hz · SPACING = VELOCITY', thumb: ['THUMB', 'ZONE'],
         date: 'TUE 14 OCT', today: 'Today', back: '← TODAY',
-        rows: [['09:00', 'Consultation', 'Studio 1 · 30 min'], ['10:30', 'Haircut — Anna', 'Studio 2 · 45 min'], ['13:15', 'Colour', 'Studio 2 · 90 min'], ['16:00', 'Fitting', 'Studio 3 · 20 min']],
+        rows: [['09:00', 'Consultation', 'Studio 1 · 30 min'], ['10:30', 'Haircut · Anna', 'Studio 2 · 45 min'], ['13:15', 'Colour', 'Studio 2 · 90 min'], ['16:00', 'Fitting', 'Studio 3 · 20 min']],
         details: [['STUDIO', '2 · first floor'], ['DURATION', '45 min'], ['WITH', 'Anna K.'], ['REMINDER', '1 h before']],
         confirmed: 'CONFIRMED', sheetTitle: 'Booking confirmed', sheetLine: 'Tue 14 Oct · 10:30 · Studio 2', reminder: 'Reminder set for 09:30.',
       },
@@ -235,13 +235,13 @@ const en: Dictionary = {
     },
   },
   about: {
-    title: 'ABOUT', intro: 'Strategy, design and development — connected from concept to launch.', cta: 'Get in touch',
+    title: 'ABOUT', intro: 'Strategy, design and development, connected from concept to launch.', cta: 'Get in touch',
     copy: 'I design and build distinctive digital products for ambitious teams, combining strategy, interaction, development and visual identity as one connected system.',
     portraitAlt: 'KERN creative developer portrait',
   },
   contact: {
     contact: 'Contact', availability: 'Available worldwide', information: 'Information', independent: 'Independent creative development',
-    commissions: 'Selected commissions & partnerships', connect: 'Connect', thanks: 'Thank you — your project note is ready.',
+    commissions: 'Selected commissions & partnerships', connect: 'Connect', thanks: 'Thank you, your project note is ready.',
     name: 'Your name', email: 'Email', company: 'Company (optional)', message: 'Tell me about your project...', submit: 'Discuss a project',
     discipline: 'Creative Development',
   },
@@ -254,7 +254,7 @@ const en: Dictionary = {
     role: 'ROLE', technology: 'TECHNOLOGY', process: 'PROCESS', finalExperience: 'Final experience', nextProject: 'NEXT PROJECT', opening: 'Opening project',
     switchLanguage: 'Switch language', scroll: 'SCROLL',
     approach: 'APPROACH', build: 'THE BUILD', deliverables: 'DELIVERABLES', year: 'YEAR', allWork: 'All projects', viewNext: 'Open next project',
-    project: 'PROJECT', result: 'RESULT', stack: 'STACK', figure: 'FIG.', systemMap: 'System map — four build points',
+    project: 'PROJECT', result: 'RESULT', stack: 'STACK', figure: 'FIG.', systemMap: 'System map: four build points',
   },
   projects: {
     'eclipse-ink': {
@@ -298,17 +298,17 @@ const pl: Dictionary = {
   navigation: {
     links: ['Projekty', 'Usługi', 'O mnie', 'Kontakt'],
     backTop: 'Wróć na początek', menu: 'Otwórz menu', language: 'Zmień język',
-    footer: 'KERN — CREATIVE DEVELOPMENT',
+    footer: 'KERN · CREATIVE DEVELOPMENT',
   },
   hero: {
     role: 'KREATYWNY DEVELOPER', availability: 'DOSTĘPNY GLOBALNIE', shaping: 'KSZTAŁTUJĘ', concepts: 'KONCEPCJE',
     building: 'TWORZĘ', experiences: 'DOŚWIADCZENIA', open: 'OTWARTY NA PROJEKTY',
   },
   work: {
-    title: 'WYBRANE PROJEKTY', intro: 'Wybrane produkty cyfrowe i interaktywne doświadczenia — od architektury systemu po wdrożenie.',
+    title: 'WYBRANE PROJEKTY', intro: 'Wybrane produkty cyfrowe i interaktywne doświadczenia, od architektury systemu po wdrożenie.',
     cta: 'Rozpocznij projekt', selectProject: 'Wybierz projekt', show: 'Pokaż', previous: 'Poprzedni projekt', next: 'Następny projekt',
     view: 'ZOBACZ', opening: 'Otwieranie projektu',
-    label: 'WYBRANE PROJEKTY', count: '03 STUDIA PROJEKTÓW / 2026', viewCase: 'ZOBACZ STUDIUM', viewProject: 'ZOBACZ PROJEKT',
+    label: 'WYBRANE PROJEKTY', count: 'STUDIA PROJEKTÓW / 2026', viewCase: 'ZOBACZ STUDIUM', viewProject: 'ZOBACZ PROJEKT',
     concept: 'KONCEPCJA', progress: 'W TRAKCIE', plate: 'PLANSZA', capture: 'ZRZUT', production: 'PRODUKCJA', localBuild: 'WERSJA LOKALNA',
   },
   services: {
@@ -318,23 +318,23 @@ const pl: Dictionary = {
     scroll: 'PRZEWIŃ',
     navigation: 'Usługi',
     goTo: 'Przejdź do',
-    next: 'DALEJ — O MNIE',
+    next: 'DALEJ: O MNIE',
     items: [
-      { title: ['STRONY', 'INTERNETOWE'], line: 'Landing page, strony firmowe i autorskie, interaktywne witryny — tworzone, by zostać w pamięci.', caps: ['Landing page', 'Strony firmowe', 'Interaktywne / autorskie'] },
+      { title: ['STRONY', 'INTERNETOWE'], line: 'Landing page, strony firmowe i autorskie, interaktywne witryny, tworzone, by zostać w pamięci.', caps: ['Landing page', 'Strony firmowe', 'Interaktywne / autorskie'] },
       { title: ['E-COMMERCE'], line: 'Sklepy i doświadczenia produktowe, w których zakup przychodzi naturalnie.', caps: ['Sklepy internetowe', 'Prezentacja produktu', 'Autorskie storefronty', 'Płatności i checkout'] },
-      { title: ['APLIKACJE', 'WEBOWE'], line: 'Panele, systemy rezerwacji i portale — narzędzia, na których działa firma.', caps: ['Panele i dashboardy', 'Systemy rezerwacji', 'Portale klienta', 'Narzędzia na miarę'] },
+      { title: ['APLIKACJE', 'WEBOWE'], line: 'Panele, systemy rezerwacji i portale, narzędzia, na których działa firma.', caps: ['Panele i dashboardy', 'Systemy rezerwacji', 'Portale klienta', 'Narzędzia na miarę'] },
       { title: ['APLIKACJE', 'MOBILNE'], line: 'Produkty mobilne i aplikacje wieloplatformowe, projektowane pod dłoń.', caps: ['Produkty mobilne', 'Aplikacje cross-platform', 'Autorskie doświadczenia'] },
       { title: ['WZROST'], line: 'SEO, analityka i kampanie połączone w jeden mierzalny system.', caps: ['Techniczne SEO', 'Analityka i śledzenie konwersji', 'Google Ads · Meta Ads', 'Landing page pod konwersję'] },
-      { title: ['OPIEKA', 'I ROZWÓJ'], line: 'Utrzymanie, aktualizacje i stały rozwój — długo po premierze.', caps: ['Utrzymanie i aktualizacje', 'Dalszy rozwój', 'Wsparcie wdrożeń', 'Długofalowa ewolucja'] },
+      { title: ['OPIEKA', 'I ROZWÓJ'], line: 'Utrzymanie, aktualizacje i stały rozwój, długo po premierze.', caps: ['Utrzymanie i aktualizacje', 'Dalszy rozwój', 'Wsparcie wdrożeń', 'Długofalowa ewolucja'] },
     ],
     draw: {
       captions: [
-        ['RYS. 01 — SYSTEM LAYOUTU', '12 / 8 / 4 KOL. · 1440 → 834 → 390'],
-        ['RYS. 02 — OBIEKT, WARIANT, DECYZJA', 'NACZYNIE N°1 · 3 WYKOŃCZENIA · 3 ROZMIARY'],
-        ['RYS. 03 — ARCHITEKTURA PRODUKTU', 'REZERWACJA · 8 USŁUG · 1 ZADANIE'],
-        ['RYS. 04 — GEST I KONTEKST', 'SPRĘŻYNA k 170 · c 14 · STREFA KCIUKA'],
-        ['RYS. 05 — ITERACJE', 'KONWERSJA · 24 TYGODNIE · 5 TESTÓW'],
-        ['RYS. 06 — PRODUKT W CZASIE', 'WYDANIA · POPRAWKI · DOSTĘPNOŚĆ'],
+        ['SYSTEM LAYOUTU', '12 / 8 / 4 KOL. · 1440 → 834 → 390'],
+        ['OBIEKT, WARIANT, DECYZJA', 'NACZYNIE N°1 · 3 WYKOŃCZENIA · 3 ROZMIARY'],
+        ['ARCHITEKTURA PRODUKTU', 'REZERWACJA · 8 USŁUG · 1 ZADANIE'],
+        ['GEST I KONTEKST', 'SPRĘŻYNA k 170 · c 14 · STREFA KCIUKA'],
+        ['ITERACJE', 'KONWERSJA · 24 TYGODNIE · 5 TESTÓW'],
+        ['PRODUKT W CZASIE', 'WYDANIA · POPRAWKI · DOSTĘPNOŚĆ'],
       ],
       web: {
         viewport: 'SZEROKOŚĆ · PX', brand: 'Nord Atelier', nav: 'Prace    Studio    Dziennik    Kontakt', menu: 'Menu',
@@ -344,9 +344,9 @@ const pl: Dictionary = {
         continues: 'DALEJ',
       },
       shop: {
-        set: 'PLAN 01 · ŚWIATŁO DZIENNE 5600 K · SKALA 1:4', crumb: 'N°01 — OBIEKTY / NACZYNIA', name: 'Naczynie N°1', desc: 'Ręcznie toczona kamionka, matowe szkliwo.',
+        set: 'PLAN 01 · ŚWIATŁO DZIENNE 5600 K · SKALA 1:4', crumb: 'N°01 · OBIEKTY / NACZYNIA', name: 'Naczynie N°1', desc: 'Ręcznie toczona kamionka, matowe szkliwo.',
         finish: 'WYKOŃCZENIE', finishes: ['Kość', 'Dym', 'Róż'], size: 'ROZMIAR', prices: ['890 zł', '990 zł', '940 zł'],
-        note: 'Z VAT · WYSYŁKA W 2–3 DNI', add: 'Dodaj do koszyka', inBag: 'W koszyku — 1', delivery: 'DARMOWA DOSTAWA · ŚR 22 PAŹ',
+        note: 'Z VAT · WYSYŁKA W 2–3 DNI', add: 'Dodaj do koszyka', inBag: 'W koszyku: 1', delivery: 'DARMOWA DOSTAWA · ŚR 22 PAŹ',
       },
       app: {
         nodes: [['ZAPYTANIE', 'portal klienta'], ['DOSTĘPNOŚĆ', 'kalendarz'], ['BLOKADA', 'termin · 10 min'], ['PŁATNOŚĆ', 'karta · blik'], ['POTWIERDZENIE', 'rekord rezerwacji'], ['POWIADOMIENIE', 'sms · e-mail'], ['ZESPÓŁ', 'grafik'], ['RAPORTY', 'dzienny rejestr']],
@@ -354,9 +354,9 @@ const pl: Dictionary = {
       },
       mobile: {
         spring: 'ARKUSZ · SPRĘŻYNA', settle: 'k 170 · c 14 · stabilizacja 560 ms', context: 'KONTEKST', steps: ['01 LISTA', '02 SZCZEGÓŁ', '03 POTWIERDZENIE'],
-        samples: 'PRÓBKI PALCA · 60 Hz — ODSTĘP = PRĘDKOŚĆ', thumb: ['STREFA', 'KCIUKA'],
+        samples: 'PRÓBKI PALCA · 60 Hz · ODSTĘP = PRĘDKOŚĆ', thumb: ['STREFA', 'KCIUKA'],
         date: 'WT 14 PAŹ', today: 'Dziś', back: '← DZIŚ',
-        rows: [['09:00', 'Konsultacja', 'Studio 1 · 30 min'], ['10:30', 'Strzyżenie — Anna', 'Studio 2 · 45 min'], ['13:15', 'Koloryzacja', 'Studio 2 · 90 min'], ['16:00', 'Przymiarka', 'Studio 3 · 20 min']],
+        rows: [['09:00', 'Konsultacja', 'Studio 1 · 30 min'], ['10:30', 'Strzyżenie · Anna', 'Studio 2 · 45 min'], ['13:15', 'Koloryzacja', 'Studio 2 · 90 min'], ['16:00', 'Przymiarka', 'Studio 3 · 20 min']],
         details: [['STUDIO', '2 · pierwsze piętro'], ['CZAS', '45 min'], ['Z', 'Anna K.'], ['PRZYPOMN.', '1 h wcześniej']],
         confirmed: 'POTWIERDZONO', sheetTitle: 'Potwierdzone', sheetLine: 'Wt 14 paź · 10:30 · Studio 2', reminder: 'Przypomnienie o 09:30.',
       },
@@ -374,13 +374,13 @@ const pl: Dictionary = {
     },
   },
   about: {
-    title: 'O MNIE', intro: 'Strategia, design i development — połączone od koncepcji po wdrożenie.', cta: 'Skontaktuj się',
+    title: 'O MNIE', intro: 'Strategia, design i development, połączone od koncepcji po wdrożenie.', cta: 'Skontaktuj się',
     copy: 'Projektuję i buduję charakterystyczne produkty cyfrowe dla ambitnych zespołów, łącząc strategię, interakcję, development i identyfikację wizualną w jeden spójny system.',
     portraitAlt: 'Portret creative developera KERN',
   },
   contact: {
     contact: 'Kontakt', availability: 'Dostępny globalnie', information: 'Informacje', independent: 'Niezależny creative development',
-    commissions: 'Wybrane zlecenia i partnerstwa', connect: 'Napisz', thanks: 'Dziękuję — wiadomość o projekcie jest gotowa.',
+    commissions: 'Wybrane zlecenia i partnerstwa', connect: 'Napisz', thanks: 'Dziękuję, wiadomość o projekcie jest gotowa.',
     name: 'Imię i nazwisko', email: 'E-mail', company: 'Firma (opcjonalnie)', message: 'Opowiedz o swoim projekcie...', submit: 'Porozmawiajmy o projekcie',
     discipline: 'Creative Development',
   },
@@ -393,7 +393,7 @@ const pl: Dictionary = {
     role: 'ROLA', technology: 'TECHNOLOGIA', process: 'PROCES', finalExperience: 'Finalne doświadczenie', nextProject: 'NASTĘPNY PROJEKT', opening: 'Otwieranie projektu',
     switchLanguage: 'Zmień język', scroll: 'PRZEWIŃ',
     approach: 'PODEJŚCIE', build: 'REALIZACJA', deliverables: 'ZAKRES', year: 'ROK', allWork: 'Wszystkie projekty', viewNext: 'Otwórz następny projekt',
-    project: 'PROJEKT', result: 'REZULTAT', stack: 'STACK', figure: 'RYS.', systemMap: 'Mapa systemu — cztery elementy realizacji',
+    project: 'PROJEKT', result: 'REZULTAT', stack: 'STACK', figure: 'RYS.', systemMap: 'Mapa systemu: cztery elementy realizacji',
   },
   projects: {
     'eclipse-ink': {

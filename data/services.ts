@@ -44,7 +44,7 @@ export const SERVICES: Service[] = [
     name: 'UI / UX & TACTILE DESIGN SYSTEMS',
     category: 'DESIGN & PRODUCT SENSE',
     description:
-      'Crafting cohesive visual languages where typography, spacing, and micro-interactions function as one unified system. No generic kits, no bloated frameworks — only bespoke, intentional interfaces.',
+      'Crafting cohesive visual languages where typography, spacing, and micro-interactions function as one unified system. No generic kits, no bloated frameworks, only bespoke, intentional interfaces.',
     scope: [
       'Brutalist and editorial grid layouts with CAD-level precision',
       'Component library authoring and multi-brand token systems',
@@ -59,7 +59,7 @@ export const SERVICES: Service[] = [
     name: 'MOTION CHOREOGRAPHY & GSAP EXPERIENCES',
     category: 'KINETIC DESIGN',
     description:
-      'Motion is not decorative — it directs attention, communicates hierarchy, and makes digital interfaces feel physical and memorable. Custom scroll scrubbing, page morphs, and masked reveals.',
+      'Motion is not decorative, it directs attention, communicates hierarchy, and makes digital interfaces feel physical and memorable. Custom scroll scrubbing, page morphs, and masked reveals.',
     scope: [
       'Scroll-driven animations with GSAP ScrollTrigger and native View Timelines',
       'Text line masks, character staggers, and overflow clipping',

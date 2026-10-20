@@ -24,7 +24,7 @@ export function Navigation() {
         </div>
       </header>
       <div className={`nav-overlay ${open ? 'nav-overlay--open' : ''}`}>
-        <nav>{LINK_IDS.map((id, index) => <button key={id} onClick={() => go(id)}><span>0{index + 1}</span>{dictionary.navigation.links[index]}</button>)}</nav>
+        <nav>{LINK_IDS.map((id, index) => <button key={id} onClick={() => go(id)}>{dictionary.navigation.links[index]}</button>)}</nav>
         <p>{dictionary.navigation.footer}</p>
       </div>
       <style jsx>{`

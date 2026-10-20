@@ -23,7 +23,6 @@ type Copy = Dictionary['services'];
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const pad = (n: number) => String(n).padStart(2, '0');
 /** each title line is set unbroken, so the longest line decides the size */
 const longestWord = (lines: string[]) => Math.max(...lines.map((line) => line.length));
 const accentVars = (i: number): Vars => ({ '--acc': ACCENTS[i] });
@@ -52,7 +51,7 @@ const SceneCopy = memo(function SceneCopy({ items }: { items: Copy['items'] }) {
           data-scene={i}
           style={{ '--i': i, '--chars': longestWord(item.title), ...accentVars(i) } as Vars}
         >
-          <p className={styles.index}><b>{pad(i + 1)}</b><span>/ {pad(SERVICE_COUNT)}</span></p>
+          
           <h3 className={styles.title}>
             {item.title.map((line, n) => (
               <span key={line} className={styles.mask}><span style={{ '--n': n } as Vars}>{line}</span></span>
@@ -330,7 +329,7 @@ export function ServicesIndex() {
       <PinnedSection id="services">
         <div className={styles.stacked} ref={rootRef}>
           <header className={styles.stackHead}>
-            <h2 className={styles.label}><b>03</b> — {copy.label}</h2>
+            <h2 className={styles.label}>{copy.label}</h2>
             <p className={styles.stackIntro}>{copy.intro.join(' · ')}</p>
             <p className={styles.stackLead}>{copy.lead}</p>
             <div className={styles.stackOrb} data-orb-slot aria-hidden="true" />
@@ -338,7 +337,7 @@ export function ServicesIndex() {
           {copy.items.map((item, i) => (
             <section key={i} className={styles.stackScene} style={{ ...accentVars(i), '--chars': longestWord(item.title) } as Vars}>
               <div className={styles.stackCopy}>
-                <p className={styles.index}><b>{pad(i + 1)}</b><span>/ {pad(SERVICE_COUNT)}</span></p>
+                
                 <h3 className={styles.title}>{item.title.map((line) => <span key={line} className={styles.mask}><span>{line}</span></span>)}</h3>
                 <p className={styles.line}>{item.line}</p>
                 <ul className={styles.caps}>{item.caps.map((cap) => <li key={cap}>{cap}</li>)}</ul>
@@ -346,7 +345,7 @@ export function ServicesIndex() {
               <ServiceStill index={i} draw={copy.draw} />
             </section>
           ))}
-          <p className="route-station" data-route-station><b>03</b> / {dictionary.route.services}</p>
+          <p className="route-station" data-route-station>{dictionary.route.services}</p>
         </div>
       </PinnedSection>
     );
@@ -365,7 +364,7 @@ export function ServicesIndex() {
         <div className={styles.axis} data-axis aria-hidden="true"><i /></div>
 
         <header className={styles.head}>
-          <h2 className={styles.label}><b>03</b> — {copy.label}</h2>
+          <h2 className={styles.label}>{copy.label}</h2>
           <p className={styles.condensed} aria-hidden="true">{copy.intro.join(' · ')}</p>
           <nav className={styles.rail} data-rail aria-label={copy.navigation}>
             {copy.items.map((item, i) => (
@@ -374,10 +373,10 @@ export function ServicesIndex() {
                 type="button"
                 className={i === active ? styles.on : ''}
                 aria-current={i === active ? 'step' : undefined}
-                aria-label={`${copy.goTo} ${pad(i + 1)} ${item.title.join(' ')}`}
+                aria-label={`${copy.goTo} ${item.title.join(' ')}`}
                 onClick={() => goTo(i)}
               >
-                <span>{pad(i + 1)}</span>
+                <span />
               </button>
             ))}
             <i className={styles.railFill} aria-hidden="true" />
@@ -399,7 +398,7 @@ export function ServicesIndex() {
         </div>
         <div className={styles.track} data-track>
           <div className={styles.marks} aria-hidden="true">
-            {copy.items.map((item, i) => <span key={i} style={{ '--i': i } as Vars}><b>{pad(i + 1)}</b>{item.title.join(' ')}</span>)}
+            {copy.items.map((item, i) => <span key={i} style={{ '--i': i } as Vars}>{item.title.join(' ')}</span>)}
           </div>
         </div>
 
@@ -408,10 +407,10 @@ export function ServicesIndex() {
         </div>
 
         <p className={styles.counter} aria-live="polite">
-          <b>{pad(active + 1)}</b> / {pad(SERVICE_COUNT)} · {copy.items[active].title.join(' ')}
+          {copy.items[active].title.join(' ')}
         </p>
         <p className={styles.next} aria-hidden="true">{copy.next}</p>
-        <p className={`route-station ${styles.station}`} data-route-station><b>03</b> / {dictionary.route.services}</p>
+        <p className={`route-station ${styles.station}`} data-route-station>{dictionary.route.services}</p>
       </div>
     </PinnedSection>
   );
